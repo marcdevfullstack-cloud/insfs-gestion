@@ -134,7 +134,7 @@ export default function DashboardPage() {
             </h1>
           </div>
           <p className="text-sm text-muted-foreground">
-            Institut National de Formation Sociale — Côte d&apos;Ivoire
+            Institut National de Formation Sociale — Côte d&apos;Ivoire - Accueil
           </p>
         </div>
         {currentYear && (
