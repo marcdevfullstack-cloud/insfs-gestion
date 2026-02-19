@@ -5,45 +5,51 @@ import { useQuery } from "@tanstack/react-query";
 import Link from "next/link";
 import api from "@/lib/api";
 import { useAuth } from "@/hooks/useAuth";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Badge } from "@/components/ui/badge";
+import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
+  Select, SelectContent, SelectItem, SelectTrigger, SelectValue,
 } from "@/components/ui/select";
 import {
-  BookOpen,
-  Search,
-  Eye,
-  ChevronLeft,
-  ChevronRight,
-  PlusCircle,
-  Loader2,
-  Filter,
+  BookOpen, Search, Eye, ChevronLeft, ChevronRight,
+  PlusCircle, Loader2, Filter, X, CheckCircle, Clock, XCircle,
 } from "lucide-react";
 import type { PaginatedResponse, Enrollment, School, AcademicYear } from "@/types";
+import { getSchool, SCHOOL_CONFIG } from "@/lib/schools";
+import { cn } from "@/lib/utils";
 
-const STATUS_LABELS: Record<string, string> = {
-  EN_COURS: "En cours",
-  VALIDE:   "Validée",
-  ANNULE:   "Annulée",
+const STATUS_CONFIG: Record<string, { label: string; icon: React.ReactNode; badge: string }> = {
+  EN_COURS: {
+    label: "En cours",
+    icon: <Clock className="w-3 h-3" />,
+    badge: "bg-amber-100 text-amber-800 dark:bg-amber-900/40 dark:text-amber-300 border border-amber-200 dark:border-amber-800",
+  },
+  VALIDE: {
+    label: "Validée",
+    icon: <CheckCircle className="w-3 h-3" />,
+    badge: "bg-emerald-100 text-emerald-800 dark:bg-emerald-900/40 dark:text-emerald-300 border border-emerald-200 dark:border-emerald-800",
+  },
+  ANNULE: {
+    label: "Annulée",
+    icon: <XCircle className="w-3 h-3" />,
+    badge: "bg-red-100 text-red-800 dark:bg-red-900/40 dark:text-red-300 border border-red-200 dark:border-red-800",
+  },
 };
 
-const STATUS_COLORS: Record<string, string> = {
-  EN_COURS: "bg-amber-500/10 text-amber-700 dark:text-amber-400 border-amber-500/20",
-  VALIDE:   "bg-emerald-500/10 text-emerald-700 dark:text-emerald-400 border-emerald-500/20",
-  ANNULE:   "bg-red-500/10 text-red-600 dark:text-red-400 border-red-500/20",
-};
-
-const QUALITY_LABELS: Record<string, string> = {
-  CD: "Concours Direct",
-  CP: "Concours Prof.",
-  FC: "Formation Continue",
+const QUALITY_CONFIG: Record<string, { label: string; badge: string }> = {
+  CD: {
+    label: "Concours Direct",
+    badge: "bg-blue-100 text-blue-700 dark:bg-blue-900/40 dark:text-blue-300 border border-blue-200 dark:border-blue-800",
+  },
+  CP: {
+    label: "Conc. Professionnel",
+    badge: "bg-teal-100 text-teal-700 dark:bg-teal-900/40 dark:text-teal-300 border border-teal-200 dark:border-teal-800",
+  },
+  FC: {
+    label: "Formation Continue",
+    badge: "bg-purple-100 text-purple-700 dark:bg-purple-900/40 dark:text-purple-300 border border-purple-200 dark:border-purple-800",
+  },
 };
 
 export default function InscriptionsPage() {
@@ -78,14 +84,23 @@ export default function InscriptionsPage() {
   const canCreate = user?.role === "ADMIN" || user?.role === "SCOLARITE";
   const activeFilters = [filterSchool, filterYear, filterStatus].filter((f) => f !== "all").length;
 
-  return (
-    <div className="p-8 space-y-6">
+  const statusCounts = {
+    EN_COURS: enrollments?.data.filter((e) => e.status === "EN_COURS").length ?? 0,
+    VALIDE:   enrollments?.data.filter((e) => e.status === "VALIDE").length ?? 0,
+    ANNULE:   enrollments?.data.filter((e) => e.status === "ANNULE").length ?? 0,
+  };
 
-      {/* Header */}
-      <div className="flex items-center justify-between">
+  return (
+    <div className="p-6 lg:p-8 space-y-6">
+
+      {/* ── Header ── */}
+      <div className="flex items-start justify-between gap-4 flex-wrap">
         <div>
-          <h1 className="text-2xl font-bold text-foreground tracking-tight">Inscriptions</h1>
-          <p className="text-sm text-muted-foreground mt-0.5">
+          <div className="flex items-center gap-2 mb-0.5">
+            <div className="w-1 h-6 rounded-full bg-orange-500" />
+            <h1 className="text-2xl font-bold text-foreground tracking-tight">Inscriptions</h1>
+          </div>
+          <p className="text-sm text-muted-foreground pl-3">
             {enrollments
               ? `${enrollments.total} inscription${enrollments.total !== 1 ? "s" : ""} au total`
               : "Chargement..."}
@@ -93,7 +108,7 @@ export default function InscriptionsPage() {
         </div>
         {canCreate && (
           <Link href="/etudiants">
-            <Button className="bg-green-700 hover:bg-green-800 text-white gap-2 shadow-sm">
+            <Button className="bg-primary hover:bg-primary/90 text-primary-foreground gap-2 shadow-sm rounded-xl h-10 px-5">
               <PlusCircle className="w-4 h-4" />
               Nouvelle inscription
             </Button>
@@ -101,195 +116,262 @@ export default function InscriptionsPage() {
         )}
       </div>
 
-      {/* Filtres */}
-      <Card className="bg-card shadow-sm">
-        <CardContent className="p-4">
-          <div className="flex flex-wrap gap-3 items-center">
-            <div className="flex items-center gap-1.5 text-sm text-muted-foreground shrink-0">
-              <Filter className="w-4 h-4" />
-              Filtres
-              {activeFilters > 0 && (
-                <Badge className="ml-1 h-5 w-5 rounded-full p-0 flex items-center justify-center text-xs bg-primary text-primary-foreground">
-                  {activeFilters}
-                </Badge>
+      {/* ── Status pills summary ── */}
+      {enrollments && (
+        <div className="flex gap-2 flex-wrap">
+          {Object.entries(STATUS_CONFIG).map(([key, cfg]) => (
+            <button
+              key={key}
+              onClick={() => { setFilterStatus(filterStatus === key ? "all" : key); setPage(1); }}
+              className={cn(
+                "inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium transition-all border",
+                filterStatus === key
+                  ? cfg.badge + " ring-2 ring-offset-1 ring-current/30"
+                  : "bg-muted text-muted-foreground border-border hover:border-muted-foreground/30"
               )}
-            </div>
+            >
+              {cfg.icon}
+              {cfg.label}
+              <span className={cn(
+                "ml-0.5 px-1.5 py-0.5 rounded text-xs font-bold",
+                filterStatus === key ? "bg-white/30 dark:bg-black/20" : "bg-background"
+              )}>
+                {statusCounts[key as keyof typeof statusCounts]}
+              </span>
+            </button>
+          ))}
+        </div>
+      )}
 
-            <div className="relative flex-1 min-w-48">
-              <Search className="absolute left-3 top-2.5 w-4 h-4 text-muted-foreground" />
-              <Input
-                placeholder="Rechercher un étudiant..."
-                value={search}
-                onChange={(e) => { setSearch(e.target.value); setPage(1); }}
-                className="pl-9 bg-background border-border focus:border-primary"
-              />
-            </div>
+      {/* ── Filtres ── */}
+      <div className="flex flex-wrap gap-3 items-center">
+        <div className="flex items-center gap-1.5 text-sm text-muted-foreground shrink-0">
+          <Filter className="w-4 h-4" />
+          <span>Filtres</span>
+          {activeFilters > 0 && (
+            <span className="inline-flex items-center justify-center w-5 h-5 rounded-full bg-primary text-primary-foreground text-xs font-bold">
+              {activeFilters}
+            </span>
+          )}
+        </div>
 
-            <Select value={filterSchool} onValueChange={(v) => { setFilterSchool(v); setPage(1); }}>
-              <SelectTrigger className="w-44 bg-background border-border">
-                <SelectValue placeholder="Toutes les écoles" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="all">Toutes les écoles</SelectItem>
-                {schools?.map((s) => (
-                  <SelectItem key={s.id} value={s.id}>{s.code} — {s.name}</SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
+        {/* Recherche */}
+        <div className="relative flex-1 min-w-44">
+          <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-muted-foreground" />
+          <Input
+            placeholder="Rechercher un étudiant..."
+            value={search}
+            onChange={(e) => { setSearch(e.target.value); setPage(1); }}
+            className="pl-8 h-9 text-sm bg-background border-border rounded-lg"
+          />
+        </div>
 
-            <Select value={filterYear} onValueChange={(v) => { setFilterYear(v); setPage(1); }}>
-              <SelectTrigger className="w-40 bg-background border-border">
-                <SelectValue placeholder="Toutes les années" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="all">Toutes les années</SelectItem>
-                {academicYears?.map((y) => (
-                  <SelectItem key={y.id} value={y.id}>{y.label}</SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
+        <Select value={filterSchool} onValueChange={(v) => { setFilterSchool(v); setPage(1); }}>
+          <SelectTrigger className="w-44 h-9 bg-background border-border rounded-lg text-sm">
+            <SelectValue placeholder="Toutes les écoles" />
+          </SelectTrigger>
+          <SelectContent>
+            <SelectItem value="all">Toutes les écoles</SelectItem>
+            {schools?.map((s) => (
+              <SelectItem key={s.id} value={s.id}>
+                <span className="flex items-center gap-1.5">
+                  <span>{SCHOOL_CONFIG[s.code]?.icon ?? "🏢"}</span>
+                  {s.code}
+                </span>
+              </SelectItem>
+            ))}
+          </SelectContent>
+        </Select>
 
-            <Select value={filterStatus} onValueChange={(v) => { setFilterStatus(v); setPage(1); }}>
-              <SelectTrigger className="w-36 bg-background border-border">
-                <SelectValue placeholder="Tous statuts" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="all">Tous les statuts</SelectItem>
-                <SelectItem value="EN_COURS">En cours</SelectItem>
-                <SelectItem value="VALIDE">Validée</SelectItem>
-                <SelectItem value="ANNULE">Annulée</SelectItem>
-              </SelectContent>
-            </Select>
+        <Select value={filterYear} onValueChange={(v) => { setFilterYear(v); setPage(1); }}>
+          <SelectTrigger className="w-40 h-9 bg-background border-border rounded-lg text-sm">
+            <SelectValue placeholder="Toutes les années" />
+          </SelectTrigger>
+          <SelectContent>
+            <SelectItem value="all">Toutes les années</SelectItem>
+            {academicYears?.map((y) => (
+              <SelectItem key={y.id} value={y.id}>{y.label}</SelectItem>
+            ))}
+          </SelectContent>
+        </Select>
 
-            {activeFilters > 0 && (
-              <Button
-                variant="ghost"
-                size="sm"
-                onClick={() => { setFilterSchool("all"); setFilterYear("all"); setFilterStatus("all"); setPage(1); }}
-                className="text-muted-foreground hover:text-foreground"
-              >
-                Réinitialiser
-              </Button>
-            )}
+        {activeFilters > 0 && (
+          <Button
+            variant="ghost"
+            size="sm"
+            onClick={() => { setFilterSchool("all"); setFilterYear("all"); setFilterStatus("all"); setPage(1); }}
+            className="h-9 px-3 text-muted-foreground hover:text-foreground gap-1.5 rounded-lg"
+          >
+            <X className="w-3.5 h-3.5" />
+            Réinitialiser
+          </Button>
+        )}
+      </div>
+
+      {/* ── Table ── */}
+      <Card className="bg-card shadow-sm rounded-2xl overflow-hidden border border-border">
+        {isLoading ? (
+          <div className="flex flex-col items-center justify-center py-20 gap-3">
+            <Loader2 className="w-8 h-8 animate-spin text-primary" />
+            <p className="text-sm text-muted-foreground">Chargement des inscriptions...</p>
           </div>
-        </CardContent>
-      </Card>
+        ) : enrollments?.data.length === 0 ? (
+          <div className="text-center py-20 text-muted-foreground">
+            <div className="w-16 h-16 rounded-2xl bg-muted flex items-center justify-center mx-auto mb-4">
+              <BookOpen className="w-8 h-8 opacity-30" />
+            </div>
+            <p className="font-semibold text-foreground">Aucune inscription trouvée</p>
+            <p className="text-sm mt-1">
+              {activeFilters > 0 ? "Essayez de modifier vos filtres" : "Aucune inscription dans le système"}
+            </p>
+          </div>
+        ) : (
+          <>
+            <div className="overflow-x-auto">
+              <table className="w-full text-sm">
+                <thead>
+                  <tr className="border-b border-border bg-muted/50">
+                    <th className="text-left px-5 py-3.5 text-xs font-semibold text-muted-foreground uppercase tracking-wider">
+                      Étudiant
+                    </th>
+                    <th className="text-left px-4 py-3.5 text-xs font-semibold text-muted-foreground uppercase tracking-wider">
+                      École
+                    </th>
+                    <th className="text-left px-4 py-3.5 text-xs font-semibold text-muted-foreground uppercase tracking-wider">
+                      Année
+                    </th>
+                    <th className="text-left px-4 py-3.5 text-xs font-semibold text-muted-foreground uppercase tracking-wider">
+                      Qualité
+                    </th>
+                    <th className="text-left px-4 py-3.5 text-xs font-semibold text-muted-foreground uppercase tracking-wider">
+                      Statut
+                    </th>
+                    <th className="text-right px-5 py-3.5 text-xs font-semibold text-muted-foreground uppercase tracking-wider">
+                      Action
+                    </th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-border">
+                  {enrollments?.data.map((enrollment) => {
+                    const schoolCode = enrollment.school?.code;
+                    const schoolCfg = getSchool(schoolCode);
+                    const statusCfg = STATUS_CONFIG[enrollment.status];
+                    const qualityCfg = QUALITY_CONFIG[enrollment.quality];
+                    const initials = enrollment.student
+                      ? `${enrollment.student.last_name[0] ?? ""}${enrollment.student.first_name[0] ?? ""}`.toUpperCase()
+                      : "??";
 
-      {/* Tableau */}
-      <Card className="bg-card shadow-sm">
-        <CardHeader className="pb-3">
-          <CardTitle className="text-base font-semibold text-foreground flex items-center gap-2">
-            <BookOpen className="w-4 h-4 text-muted-foreground" />
-            Liste des inscriptions
-          </CardTitle>
-        </CardHeader>
-        <CardContent className="p-0">
-          {isLoading ? (
-            <div className="flex items-center justify-center py-16">
-              <Loader2 className="w-6 h-6 animate-spin text-primary" />
-            </div>
-          ) : enrollments?.data.length === 0 ? (
-            <div className="py-16 text-center text-muted-foreground">
-              <BookOpen className="w-10 h-10 mx-auto mb-3 opacity-20" />
-              <p className="font-medium">Aucune inscription trouvée</p>
-              <p className="text-sm mt-1 text-muted-foreground/70">
-                {activeFilters > 0 ? "Essayez de modifier vos filtres" : "Aucune inscription dans le système"}
-              </p>
-            </div>
-          ) : (
-            <>
-              <div className="overflow-x-auto">
-                <table className="w-full text-sm">
-                  <thead>
-                    <tr className="border-b border-border">
-                      <th className="text-left px-5 py-3 text-xs font-semibold text-muted-foreground uppercase tracking-wider">
-                        Étudiant
-                      </th>
-                      <th className="text-left px-4 py-3 text-xs font-semibold text-muted-foreground uppercase tracking-wider">
-                        École
-                      </th>
-                      <th className="text-left px-4 py-3 text-xs font-semibold text-muted-foreground uppercase tracking-wider">
-                        Année
-                      </th>
-                      <th className="text-left px-4 py-3 text-xs font-semibold text-muted-foreground uppercase tracking-wider">
-                        Qualité
-                      </th>
-                      <th className="text-left px-4 py-3 text-xs font-semibold text-muted-foreground uppercase tracking-wider">
-                        Statut
-                      </th>
-                      <th className="text-right px-4 py-3 text-xs font-semibold text-muted-foreground uppercase tracking-wider">
-                        Action
-                      </th>
-                    </tr>
-                  </thead>
-                  <tbody className="divide-y divide-border">
-                    {enrollments?.data.map((enrollment) => (
+                    return (
                       <tr
                         key={enrollment.id}
-                        className="hover:bg-accent/40 transition-colors group"
+                        className={cn(
+                          "hover:bg-accent/40 transition-colors group border-l-4",
+                          schoolCfg.rowBorder
+                        )}
                       >
+                        {/* Étudiant */}
                         <td className="px-5 py-3.5">
-                          <div className="font-medium text-foreground">
-                            {enrollment.student
-                              ? `${enrollment.student.last_name} ${enrollment.student.first_name}`
-                              : "—"}
+                          <div className="flex items-center gap-3">
+                            <div className={cn(
+                              "w-8 h-8 rounded-full flex items-center justify-center text-xs font-bold shrink-0",
+                              schoolCfg.avatar
+                            )}>
+                              {initials}
+                            </div>
+                            <div>
+                              <div className="font-semibold text-foreground">
+                                {enrollment.student
+                                  ? `${enrollment.student.last_name} ${enrollment.student.first_name}`
+                                  : "—"}
+                              </div>
+                              <div className="text-xs font-mono text-primary/80 mt-0.5">
+                                {enrollment.student?.matricule}
+                              </div>
+                            </div>
                           </div>
-                          <div className="text-xs text-primary font-mono mt-0.5">
-                            {enrollment.student?.matricule}
-                          </div>
                         </td>
+
+                        {/* École */}
                         <td className="px-4 py-3.5">
-                          <Badge variant="outline" className="font-mono text-xs">
-                            {enrollment.school?.code ?? "—"}
-                          </Badge>
+                          {schoolCode ? (
+                            <span className={cn("inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-xs font-bold", schoolCfg.badge)}>
+                              <span>{schoolCfg.icon}</span>
+                              {schoolCode}
+                            </span>
+                          ) : (
+                            <span className="text-muted-foreground text-xs">—</span>
+                          )}
                         </td>
-                        <td className="px-4 py-3.5 text-foreground">
-                          {enrollment.academic_year?.label ?? "—"}
-                        </td>
-                        <td className="px-4 py-3.5 text-muted-foreground">
-                          {QUALITY_LABELS[enrollment.quality] ?? enrollment.quality}
-                        </td>
+
+                        {/* Année */}
                         <td className="px-4 py-3.5">
-                          <Badge variant="outline" className={STATUS_COLORS[enrollment.status]}>
-                            {STATUS_LABELS[enrollment.status] ?? enrollment.status}
-                          </Badge>
+                          <span className="text-sm text-foreground">
+                            {enrollment.academic_year?.label ?? "—"}
+                          </span>
                         </td>
-                        <td className="px-4 py-3.5 text-right">
+
+                        {/* Qualité */}
+                        <td className="px-4 py-3.5">
+                          {qualityCfg ? (
+                            <span className={cn("inline-flex px-2 py-0.5 rounded text-xs font-medium", qualityCfg.badge)}>
+                              {enrollment.quality}
+                            </span>
+                          ) : (
+                            <span className="text-xs text-muted-foreground">{enrollment.quality}</span>
+                          )}
+                        </td>
+
+                        {/* Statut */}
+                        <td className="px-4 py-3.5">
+                          {statusCfg ? (
+                            <span className={cn("inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-xs font-medium", statusCfg.badge)}>
+                              {statusCfg.icon}
+                              {statusCfg.label}
+                            </span>
+                          ) : (
+                            <span className="text-xs text-muted-foreground">{enrollment.status}</span>
+                          )}
+                        </td>
+
+                        {/* Action */}
+                        <td className="px-5 py-3.5 text-right">
                           <Link href={`/inscriptions/${enrollment.id}`}>
                             <Button
                               variant="ghost"
                               size="sm"
-                              className="text-muted-foreground hover:text-primary hover:bg-primary/10 opacity-0 group-hover:opacity-100 transition-all"
+                              className="h-8 px-3 text-muted-foreground hover:text-primary hover:bg-primary/10 rounded-lg text-xs gap-1.5 opacity-0 group-hover:opacity-100 transition-all"
                             >
-                              <Eye className="w-4 h-4 mr-1.5" />
-                              Voir
+                              <Eye className="w-3.5 h-3.5" />
+                              Gérer
                             </Button>
                           </Link>
                         </td>
                       </tr>
-                    ))}
-                  </tbody>
-                </table>
-              </div>
+                    );
+                  })}
+                </tbody>
+              </table>
+            </div>
 
-              {enrollments && enrollments.last_page > 1 && (
-                <div className="flex items-center justify-between px-5 py-3.5 border-t border-border">
-                  <span className="text-sm text-muted-foreground">
-                    {enrollments.from}–{enrollments.to} sur {enrollments.total}
-                  </span>
-                  <div className="flex gap-2">
-                    <Button variant="outline" size="sm" disabled={page === 1} onClick={() => setPage((p) => p - 1)}>
-                      <ChevronLeft className="w-4 h-4" />
-                    </Button>
-                    <Button variant="outline" size="sm" disabled={page === enrollments.last_page} onClick={() => setPage((p) => p + 1)}>
-                      <ChevronRight className="w-4 h-4" />
-                    </Button>
-                  </div>
+            {/* Pagination */}
+            {enrollments && enrollments.last_page > 1 && (
+              <div className="flex items-center justify-between px-5 py-3.5 border-t border-border bg-muted/30">
+                <span className="text-sm text-muted-foreground">
+                  <span className="font-medium text-foreground">{enrollments.from}–{enrollments.to}</span> sur{" "}
+                  <span className="font-medium text-foreground">{enrollments.total}</span>
+                </span>
+                <div className="flex gap-1.5">
+                  <Button variant="outline" size="sm" disabled={page === 1} onClick={() => setPage((p) => p - 1)} className="h-8 w-8 p-0 rounded-lg">
+                    <ChevronLeft className="w-4 h-4" />
+                  </Button>
+                  <Button variant="outline" size="sm" disabled={page === enrollments.last_page} onClick={() => setPage((p) => p + 1)} className="h-8 w-8 p-0 rounded-lg">
+                    <ChevronRight className="w-4 h-4" />
+                  </Button>
                 </div>
-              )}
-            </>
-          )}
-        </CardContent>
+              </div>
+            )}
+          </>
+        )}
       </Card>
     </div>
   );

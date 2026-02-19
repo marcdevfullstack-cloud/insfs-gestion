@@ -4,46 +4,37 @@ import { useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import Link from "next/link";
 import api from "@/lib/api";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Badge } from "@/components/ui/badge";
+import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
+  Select, SelectContent, SelectItem, SelectTrigger, SelectValue,
 } from "@/components/ui/select";
 import {
-  CreditCard,
-  Eye,
-  ChevronLeft,
-  ChevronRight,
-  Banknote,
-  Loader2,
-  TrendingUp,
+  CreditCard, Eye, ChevronLeft, ChevronRight, Banknote,
+  Loader2, TrendingUp, X, CheckCircle, Clock, BarChart3,
 } from "lucide-react";
 import type { Payment, PaginatedResponse, Enrollment, School, AcademicYear } from "@/types";
+import { getSchool, SCHOOL_CONFIG } from "@/lib/schools";
+import { cn } from "@/lib/utils";
 
 function formatFcfa(n: number) {
   if (n >= 1_000_000) return (n / 1_000_000).toFixed(1) + " M FCFA";
   return new Intl.NumberFormat("fr-FR").format(n) + " FCFA";
 }
 
-function formatDate(d: string) {
-  return new Date(d).toLocaleDateString("fr-FR");
-}
-
-const STATUS_COLORS: Record<string, string> = {
-  EN_COURS: "bg-amber-500/10 text-amber-700 dark:text-amber-400 border-amber-500/20",
-  VALIDE:   "bg-emerald-500/10 text-emerald-700 dark:text-emerald-400 border-emerald-500/20",
-  ANNULE:   "bg-red-500/10 text-red-600 dark:text-red-400 border-red-500/20",
-};
-
-const STATUS_LABELS: Record<string, string> = {
-  EN_COURS: "En cours",
-  VALIDE:   "Validée",
-  ANNULE:   "Annulée",
+const STATUS_CONFIG: Record<string, { label: string; badge: string }> = {
+  EN_COURS: {
+    label: "En cours",
+    badge: "bg-amber-100 text-amber-800 dark:bg-amber-900/40 dark:text-amber-300 border border-amber-200 dark:border-amber-800",
+  },
+  VALIDE: {
+    label: "Validée",
+    badge: "bg-emerald-100 text-emerald-800 dark:bg-emerald-900/40 dark:text-emerald-300 border border-emerald-200 dark:border-emerald-800",
+  },
+  ANNULE: {
+    label: "Annulée",
+    badge: "bg-red-100 text-red-800 dark:bg-red-900/40 dark:text-red-300 border border-red-200 dark:border-red-800",
+  },
 };
 
 export default function PaiementsPage() {
@@ -78,185 +69,273 @@ export default function PaiementsPage() {
 
   const totalCollected = allPayments?.reduce((sum, p) => sum + Number(p.amount), 0) ?? 0;
   const validatedCount = enrollments?.data.filter((e) => e.status === "VALIDE").length ?? 0;
+  const enCoursCount = enrollments?.data.filter((e) => e.status === "EN_COURS").length ?? 0;
+  const activeFilters = [filterSchool, filterYear].filter((f) => f !== "all").length;
+
+  const statCards = [
+    {
+      label: "Total collecté",
+      value: formatFcfa(totalCollected),
+      icon: Banknote,
+      bg: "bg-emerald-500/10",
+      text: "text-emerald-600 dark:text-emerald-400",
+      border: "border-t-emerald-500",
+    },
+    {
+      label: "Inscriptions validées",
+      value: String(validatedCount),
+      icon: CheckCircle,
+      bg: "bg-primary/10",
+      text: "text-primary",
+      border: "border-t-primary",
+    },
+    {
+      label: "En cours",
+      value: String(enCoursCount),
+      icon: Clock,
+      bg: "bg-amber-500/10",
+      text: "text-amber-600 dark:text-amber-400",
+      border: "border-t-amber-500",
+    },
+    {
+      label: "Paiements enregistrés",
+      value: String(allPayments?.length ?? 0),
+      icon: BarChart3,
+      bg: "bg-blue-500/10",
+      text: "text-blue-600 dark:text-blue-400",
+      border: "border-t-blue-500",
+    },
+  ];
 
   return (
-    <div className="p-8 space-y-6">
+    <div className="p-6 lg:p-8 space-y-6">
 
-      {/* Header */}
-      <div className="flex items-start justify-between flex-wrap gap-4">
-        <div>
+      {/* ── Header ── */}
+      <div>
+        <div className="flex items-center gap-2 mb-0.5">
+          <div className="w-1 h-6 rounded-full bg-emerald-500" />
           <h1 className="text-2xl font-bold text-foreground tracking-tight">Paiements</h1>
-          <p className="text-sm text-muted-foreground mt-0.5">Suivi financier des inscriptions</p>
         </div>
-
-        {/* Stats rapides */}
-        <div className="flex items-center gap-3 flex-wrap">
-          <div className="flex items-center gap-2.5 px-4 py-2.5 rounded-xl bg-emerald-500/10 border border-emerald-500/20">
-            <Banknote className="w-4 h-4 text-emerald-600 dark:text-emerald-400 shrink-0" />
-            <div>
-              <div className="text-xs text-emerald-600/70 dark:text-emerald-400/70">Total collecté</div>
-              <div className="text-sm font-bold text-emerald-700 dark:text-emerald-400">
-                {formatFcfa(totalCollected)}
-              </div>
-            </div>
-          </div>
-          <div className="flex items-center gap-2.5 px-4 py-2.5 rounded-xl bg-primary/10 border border-primary/20">
-            <TrendingUp className="w-4 h-4 text-primary shrink-0" />
-            <div>
-              <div className="text-xs text-primary/70">Validées</div>
-              <div className="text-sm font-bold text-primary">{validatedCount} inscriptions</div>
-            </div>
-          </div>
-        </div>
+        <p className="text-sm text-muted-foreground pl-3">Suivi financier des inscriptions</p>
       </div>
 
-      {/* Filtres */}
-      <Card className="bg-card shadow-sm">
-        <CardContent className="p-4">
-          <div className="flex flex-wrap gap-3 items-center">
-            <Select value={filterSchool} onValueChange={(v) => { setFilterSchool(v); setPage(1); }}>
-              <SelectTrigger className="w-48 bg-background border-border">
-                <SelectValue placeholder="Toutes les écoles" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="all">Toutes les écoles</SelectItem>
-                {schools?.map((s) => (
-                  <SelectItem key={s.id} value={s.id}>{s.code} — {s.name}</SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
+      {/* ── Stat cards ── */}
+      <div className="grid grid-cols-2 xl:grid-cols-4 gap-4">
+        {statCards.map((s) => {
+          const Icon = s.icon;
+          return (
+            <Card key={s.label} className={cn("bg-card shadow-sm border-t-4 rounded-2xl", s.border)}>
+              <CardContent className="p-4">
+                <div className="flex items-center justify-between mb-3">
+                  <span className="text-xs font-medium text-muted-foreground">{s.label}</span>
+                  <div className={cn("p-1.5 rounded-lg", s.bg)}>
+                    <Icon className={cn("w-3.5 h-3.5", s.text)} />
+                  </div>
+                </div>
+                <div className={cn("text-xl font-bold", s.text)}>{s.value}</div>
+              </CardContent>
+            </Card>
+          );
+        })}
+      </div>
 
-            <Select value={filterYear} onValueChange={(v) => { setFilterYear(v); setPage(1); }}>
-              <SelectTrigger className="w-44 bg-background border-border">
-                <SelectValue placeholder="Toutes les années" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="all">Toutes les années</SelectItem>
-                {academicYears?.map((y) => (
-                  <SelectItem key={y.id} value={y.id}>{y.label}</SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
+      {/* ── Filtres ── */}
+      <div className="flex flex-wrap gap-3 items-center">
+        <Select value={filterSchool} onValueChange={(v) => { setFilterSchool(v); setPage(1); }}>
+          <SelectTrigger className="w-48 h-9 bg-background border-border rounded-lg text-sm">
+            <SelectValue placeholder="Toutes les écoles" />
+          </SelectTrigger>
+          <SelectContent>
+            <SelectItem value="all">Toutes les écoles</SelectItem>
+            {schools?.map((s) => (
+              <SelectItem key={s.id} value={s.id}>
+                <span className="flex items-center gap-1.5">
+                  <span>{SCHOOL_CONFIG[s.code]?.icon ?? "🏢"}</span>
+                  {s.code} — {s.name}
+                </span>
+              </SelectItem>
+            ))}
+          </SelectContent>
+        </Select>
 
-            {(filterSchool !== "all" || filterYear !== "all") && (
-              <Button
-                variant="ghost"
-                size="sm"
-                onClick={() => { setFilterSchool("all"); setFilterYear("all"); setPage(1); }}
-                className="text-muted-foreground hover:text-foreground"
-              >
-                Réinitialiser
-              </Button>
-            )}
+        <Select value={filterYear} onValueChange={(v) => { setFilterYear(v); setPage(1); }}>
+          <SelectTrigger className="w-40 h-9 bg-background border-border rounded-lg text-sm">
+            <SelectValue placeholder="Toutes les années" />
+          </SelectTrigger>
+          <SelectContent>
+            <SelectItem value="all">Toutes les années</SelectItem>
+            {academicYears?.map((y) => (
+              <SelectItem key={y.id} value={y.id}>{y.label}</SelectItem>
+            ))}
+          </SelectContent>
+        </Select>
+
+        {activeFilters > 0 && (
+          <Button
+            variant="ghost"
+            size="sm"
+            onClick={() => { setFilterSchool("all"); setFilterYear("all"); setPage(1); }}
+            className="h-9 px-3 text-muted-foreground hover:text-foreground gap-1.5 rounded-lg"
+          >
+            <X className="w-3.5 h-3.5" />
+            Réinitialiser
+          </Button>
+        )}
+      </div>
+
+      {/* ── Table ── */}
+      <Card className="bg-card shadow-sm rounded-2xl overflow-hidden border border-border">
+        <div className="px-5 py-4 border-b border-border flex items-center gap-2">
+          <CreditCard className="w-4 h-4 text-muted-foreground" />
+          <span className="text-sm font-semibold text-foreground">Inscriptions — suivi financier</span>
+          {enrollments && (
+            <span className="ml-auto text-xs text-muted-foreground">
+              {enrollments.total} inscription{enrollments.total !== 1 ? "s" : ""}
+            </span>
+          )}
+        </div>
+
+        {isLoading ? (
+          <div className="flex flex-col items-center justify-center py-20 gap-3">
+            <Loader2 className="w-8 h-8 animate-spin text-primary" />
+            <p className="text-sm text-muted-foreground">Chargement...</p>
           </div>
-        </CardContent>
-      </Card>
+        ) : enrollments?.data.length === 0 ? (
+          <div className="py-20 text-center text-muted-foreground">
+            <div className="w-16 h-16 rounded-2xl bg-muted flex items-center justify-center mx-auto mb-4">
+              <CreditCard className="w-8 h-8 opacity-30" />
+            </div>
+            <p className="font-semibold text-foreground">Aucune inscription trouvée</p>
+          </div>
+        ) : (
+          <>
+            <div className="overflow-x-auto">
+              <table className="w-full text-sm">
+                <thead>
+                  <tr className="border-b border-border bg-muted/50">
+                    <th className="text-left px-5 py-3.5 text-xs font-semibold text-muted-foreground uppercase tracking-wider">
+                      Étudiant
+                    </th>
+                    <th className="text-left px-4 py-3.5 text-xs font-semibold text-muted-foreground uppercase tracking-wider">
+                      École
+                    </th>
+                    <th className="text-left px-4 py-3.5 text-xs font-semibold text-muted-foreground uppercase tracking-wider">
+                      Année
+                    </th>
+                    <th className="text-left px-4 py-3.5 text-xs font-semibold text-muted-foreground uppercase tracking-wider">
+                      Statut
+                    </th>
+                    <th className="text-right px-5 py-3.5 text-xs font-semibold text-muted-foreground uppercase tracking-wider">
+                      Action
+                    </th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-border">
+                  {enrollments?.data.map((enrollment) => {
+                    const schoolCode = enrollment.school?.code;
+                    const schoolCfg = getSchool(schoolCode);
+                    const statusCfg = STATUS_CONFIG[enrollment.status];
+                    const initials = enrollment.student
+                      ? `${enrollment.student.last_name[0] ?? ""}${enrollment.student.first_name[0] ?? ""}`.toUpperCase()
+                      : "??";
 
-      {/* Tableau */}
-      <Card className="bg-card shadow-sm">
-        <CardHeader className="pb-3">
-          <CardTitle className="text-base font-semibold text-foreground flex items-center gap-2">
-            <CreditCard className="w-4 h-4 text-muted-foreground" />
-            Inscriptions — suivi financier
-          </CardTitle>
-        </CardHeader>
-        <CardContent className="p-0">
-          {isLoading ? (
-            <div className="flex items-center justify-center py-16">
-              <Loader2 className="w-6 h-6 animate-spin text-primary" />
-            </div>
-          ) : enrollments?.data.length === 0 ? (
-            <div className="py-16 text-center text-muted-foreground">
-              <CreditCard className="w-10 h-10 mx-auto mb-3 opacity-20" />
-              <p className="font-medium">Aucune inscription trouvée</p>
-            </div>
-          ) : (
-            <>
-              <div className="overflow-x-auto">
-                <table className="w-full text-sm">
-                  <thead>
-                    <tr className="border-b border-border">
-                      <th className="text-left px-5 py-3 text-xs font-semibold text-muted-foreground uppercase tracking-wider">
-                        Étudiant
-                      </th>
-                      <th className="text-left px-4 py-3 text-xs font-semibold text-muted-foreground uppercase tracking-wider">
-                        École / Année
-                      </th>
-                      <th className="text-left px-4 py-3 text-xs font-semibold text-muted-foreground uppercase tracking-wider">
-                        Statut
-                      </th>
-                      <th className="text-right px-4 py-3 text-xs font-semibold text-muted-foreground uppercase tracking-wider">
-                        Action
-                      </th>
-                    </tr>
-                  </thead>
-                  <tbody className="divide-y divide-border">
-                    {enrollments?.data.map((enrollment) => (
+                    return (
                       <tr
                         key={enrollment.id}
-                        className="hover:bg-accent/40 transition-colors group"
+                        className={cn(
+                          "hover:bg-accent/40 transition-colors group border-l-4",
+                          schoolCfg.rowBorder
+                        )}
                       >
+                        {/* Étudiant */}
                         <td className="px-5 py-3.5">
-                          <div className="font-medium text-foreground">
-                            {enrollment.student
-                              ? `${enrollment.student.last_name} ${enrollment.student.first_name}`
-                              : "—"}
-                          </div>
-                          <div className="text-xs text-primary font-mono mt-0.5">
-                            {enrollment.student?.matricule}
+                          <div className="flex items-center gap-3">
+                            <div className={cn(
+                              "w-8 h-8 rounded-full flex items-center justify-center text-xs font-bold shrink-0",
+                              schoolCfg.avatar
+                            )}>
+                              {initials}
+                            </div>
+                            <div>
+                              <div className="font-semibold text-foreground">
+                                {enrollment.student
+                                  ? `${enrollment.student.last_name} ${enrollment.student.first_name}`
+                                  : "—"}
+                              </div>
+                              <div className="text-xs font-mono text-primary/80 mt-0.5">
+                                {enrollment.student?.matricule}
+                              </div>
+                            </div>
                           </div>
                         </td>
+
+                        {/* École */}
                         <td className="px-4 py-3.5">
-                          <div className="font-medium text-foreground">
-                            <Badge variant="outline" className="font-mono text-xs mr-1.5">
-                              {enrollment.school?.code}
-                            </Badge>
-                          </div>
-                          <div className="text-xs text-muted-foreground mt-1">
-                            {enrollment.academic_year?.label}
-                          </div>
+                          {schoolCode ? (
+                            <span className={cn("inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-xs font-bold", schoolCfg.badge)}>
+                              <span>{schoolCfg.icon}</span>
+                              {schoolCode}
+                            </span>
+                          ) : (
+                            <span className="text-muted-foreground text-xs">—</span>
+                          )}
                         </td>
+
+                        {/* Année */}
                         <td className="px-4 py-3.5">
-                          <Badge variant="outline" className={STATUS_COLORS[enrollment.status]}>
-                            {STATUS_LABELS[enrollment.status] ?? enrollment.status}
-                          </Badge>
+                          <span className="text-sm text-foreground">{enrollment.academic_year?.label ?? "—"}</span>
                         </td>
-                        <td className="px-4 py-3.5 text-right">
+
+                        {/* Statut */}
+                        <td className="px-4 py-3.5">
+                          {statusCfg ? (
+                            <span className={cn("inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-xs font-medium", statusCfg.badge)}>
+                              {statusCfg.label}
+                            </span>
+                          ) : (
+                            <span className="text-xs text-muted-foreground">{enrollment.status}</span>
+                          )}
+                        </td>
+
+                        {/* Action */}
+                        <td className="px-5 py-3.5 text-right">
                           <Link href={`/inscriptions/${enrollment.id}`}>
                             <Button
                               variant="ghost"
                               size="sm"
-                              className="text-muted-foreground hover:text-primary hover:bg-primary/10 opacity-0 group-hover:opacity-100 transition-all"
+                              className="h-8 px-3 text-muted-foreground hover:text-primary hover:bg-primary/10 rounded-lg text-xs gap-1.5 opacity-0 group-hover:opacity-100 transition-all"
                             >
-                              <Eye className="w-4 h-4 mr-1.5" />
+                              <Eye className="w-3.5 h-3.5" />
                               Gérer
                             </Button>
                           </Link>
                         </td>
                       </tr>
-                    ))}
-                  </tbody>
-                </table>
-              </div>
+                    );
+                  })}
+                </tbody>
+              </table>
+            </div>
 
-              {enrollments && enrollments.last_page > 1 && (
-                <div className="flex items-center justify-between px-5 py-3.5 border-t border-border">
-                  <span className="text-sm text-muted-foreground">
-                    {enrollments.from}–{enrollments.to} sur {enrollments.total}
-                  </span>
-                  <div className="flex gap-2">
-                    <Button variant="outline" size="sm" disabled={page === 1} onClick={() => setPage((p) => p - 1)}>
-                      <ChevronLeft className="w-4 h-4" />
-                    </Button>
-                    <Button variant="outline" size="sm" disabled={page === enrollments.last_page} onClick={() => setPage((p) => p + 1)}>
-                      <ChevronRight className="w-4 h-4" />
-                    </Button>
-                  </div>
+            {/* Pagination */}
+            {enrollments && enrollments.last_page > 1 && (
+              <div className="flex items-center justify-between px-5 py-3.5 border-t border-border bg-muted/30">
+                <span className="text-sm text-muted-foreground">
+                  <span className="font-medium text-foreground">{enrollments.from}–{enrollments.to}</span> sur{" "}
+                  <span className="font-medium text-foreground">{enrollments.total}</span>
+                </span>
+                <div className="flex gap-1.5">
+                  <Button variant="outline" size="sm" disabled={page === 1} onClick={() => setPage((p) => p - 1)} className="h-8 w-8 p-0 rounded-lg">
+                    <ChevronLeft className="w-4 h-4" />
+                  </Button>
+                  <Button variant="outline" size="sm" disabled={page === enrollments.last_page} onClick={() => setPage((p) => p + 1)} className="h-8 w-8 p-0 rounded-lg">
+                    <ChevronRight className="w-4 h-4" />
+                  </Button>
                 </div>
-              )}
-            </>
-          )}
-        </CardContent>
+              </div>
+            )}
+          </>
+        )}
       </Card>
     </div>
   );

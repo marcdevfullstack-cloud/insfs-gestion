@@ -21,6 +21,7 @@ import {
   ArrowUpRight,
 } from "lucide-react";
 import type { AcademicYear, DashboardStats } from "@/types";
+import { SCHOOL_CONFIG } from "@/lib/schools";
 
 function formatFcfa(n: number) {
   if (n >= 1_000_000) return (n / 1_000_000).toFixed(1) + " M FCFA";
@@ -220,28 +221,23 @@ export default function DashboardPage() {
           <span className="text-xs text-muted-foreground">Cliquer pour voir les étudiants</span>
         </div>
         <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-4">
-          {[
-            { code: "EES",  name: "École des Éducateurs Spécialisés",  accent: "border-l-green-600",  icon: "🎓" },
-            { code: "EEP",  name: "École des Éducateurs Préscolaires", accent: "border-l-orange-500", icon: "📚" },
-            { code: "EAS",  name: "École des Assistants Sociaux",      accent: "border-l-green-500",  icon: "🤝" },
-            { code: "CPPE", name: "CPPE-PILOTE",                       accent: "border-l-orange-400", icon: "🏫" },
-          ].map((school) => (
-            <Link key={school.code} href={`/etudiants?school=${school.code}`}>
-              <Card className={`bg-card shadow-sm border-l-4 ${school.accent} hover:shadow-md transition-all cursor-pointer group`}>
+          {Object.entries(SCHOOL_CONFIG).map(([code, cfg]) => (
+            <Link key={code} href={`/etudiants?school=${code}`}>
+              <Card className={`bg-card shadow-sm border-l-4 ${cfg.cardBorder} hover:shadow-lg transition-all cursor-pointer group hover:-translate-y-0.5`}>
                 <CardContent className="p-5">
                   <div className="flex items-start gap-3">
-                    <div className="w-10 h-10 rounded-xl bg-muted flex items-center justify-center text-lg shrink-0">
-                      {school.icon}
+                    <div className={`w-10 h-10 rounded-xl flex items-center justify-center text-lg shrink-0 ${cfg.accentBg}`}>
+                      {cfg.icon}
                     </div>
                     <div className="flex-1 min-w-0">
-                      <Badge variant="outline" className="text-xs mb-1.5 font-medium">
-                        {school.code}
-                      </Badge>
+                      <span className={`inline-flex items-center px-2 py-0.5 rounded text-xs font-bold mb-1.5 ${cfg.badge}`}>
+                        {code}
+                      </span>
                       <div className="text-sm font-medium text-foreground leading-snug">
-                        {school.name}
+                        {cfg.name}
                       </div>
                     </div>
-                    <ArrowRight className="w-4 h-4 text-muted-foreground group-hover:text-primary group-hover:translate-x-0.5 transition-all mt-1 shrink-0" />
+                    <ArrowRight className={`w-4 h-4 text-muted-foreground group-hover:translate-x-1 transition-all mt-1 shrink-0 ${cfg.accent}`} />
                   </div>
                 </CardContent>
               </Card>
