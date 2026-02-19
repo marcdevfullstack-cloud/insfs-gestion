@@ -47,91 +47,91 @@
   --radius-4xl: calc(var(--radius) + 16px);
 }
 
-/* ── Palette ivoirienne ── */
-/* Orange drapeau : #F77F00  |  Vert INSFS : #009A44  |  Fond sombre : #060e08 */
-
+/* ═══════════════════════════════════════════════════════════
+   THÈME CLAIR — Fond blanc, accents INSFS vert #009A44
+   ═══════════════════════════════════════════════════════════ */
 :root {
   --radius: 0.625rem;
-  --background: oklch(1 0 0);
-  --foreground: oklch(0.145 0 0);
+
+  /* Fond page : blanc très légèrement teinté vert */
+  --background: oklch(0.965 0.006 145);
+  --foreground: oklch(0.12 0.025 145);
+
+  /* Cartes : blanc pur — s'élèvent visuellement */
   --card: oklch(1 0 0);
-  --card-foreground: oklch(0.145 0 0);
+  --card-foreground: oklch(0.12 0.025 145);
+
   --popover: oklch(1 0 0);
-  --popover-foreground: oklch(0.145 0 0);
-  --primary: oklch(0.205 0 0);
-  --primary-foreground: oklch(0.985 0 0);
-  --secondary: oklch(0.97 0 0);
-  --secondary-foreground: oklch(0.205 0 0);
-  --muted: oklch(0.97 0 0);
-  --muted-foreground: oklch(0.556 0 0);
-  --accent: oklch(0.97 0 0);
-  --accent-foreground: oklch(0.205 0 0);
-  --destructive: oklch(0.577 0.245 27.325);
-  --border: oklch(0.922 0 0);
-  --input: oklch(0.922 0 0);
-  --ring: oklch(0.708 0 0);
-  --chart-1: oklch(0.646 0.222 41.116);
-  --chart-2: oklch(0.6 0.118 184.704);
-  --chart-3: oklch(0.398 0.07 227.392);
-  --chart-4: oklch(0.828 0.189 84.429);
-  --chart-5: oklch(0.769 0.188 70.08);
-  --sidebar: oklch(0.985 0 0);
-  --sidebar-foreground: oklch(0.145 0 0);
-  --sidebar-primary: oklch(0.205 0 0);
-  --sidebar-primary-foreground: oklch(0.985 0 0);
-  --sidebar-accent: oklch(0.97 0 0);
-  --sidebar-accent-foreground: oklch(0.205 0 0);
-  --sidebar-border: oklch(0.922 0 0);
-  --sidebar-ring: oklch(0.708 0 0);
+  --popover-foreground: oklch(0.12 0.025 145);
+
+  /* Primaire : Vert INSFS #009A44 */
+  --primary: oklch(0.42 0.18 148);
+  --primary-foreground: oklch(0.99 0 0);
+
+  /* Secondaire */
+  --secondary: oklch(0.93 0.014 145);
+  --secondary-foreground: oklch(0.20 0.03 145);
+
+  /* Muted */
+  --muted: oklch(0.94 0.008 145);
+  --muted-foreground: oklch(0.48 0.018 145);
+
+  /* Accent hover */
+  --accent: oklch(0.91 0.016 145);
+  --accent-foreground: oklch(0.15 0.025 145);
+
+  --destructive: oklch(0.57 0.24 27);
+
+  /* Bordures */
+  --border: oklch(0.86 0.014 145);
+  --input: oklch(0.90 0.012 145);
+  --ring: oklch(0.42 0.18 148);
+
+  /* Charts */
+  --chart-1: oklch(0.65 0.20 50);
+  --chart-2: oklch(0.42 0.18 148);
+  --chart-3: oklch(0.55 0.14 200);
+  --chart-4: oklch(0.75 0.18 75);
+  --chart-5: oklch(0.60 0.22 30);
+
+  /* Sidebar : blanc pur avec border subtile */
+  --sidebar: oklch(1 0 0);
+  --sidebar-foreground: oklch(0.12 0.025 145);
+  --sidebar-primary: oklch(0.42 0.18 148);
+  --sidebar-primary-foreground: oklch(0.99 0 0);
+  --sidebar-accent: oklch(0.92 0.016 145);
+  --sidebar-accent-foreground: oklch(0.12 0.025 145);
+  --sidebar-border: oklch(0.88 0.012 145);
+  --sidebar-ring: oklch(0.42 0.18 148);
 }
 
+/* ═══════════════════════════════════════════════════════════
+   THÈME SOMBRE — Fond vert forêt #060e08
+   ═══════════════════════════════════════════════════════════ */
 .dark {
-  /* ── Fond principal : vert forêt sombre #060e08 ── */
   --background: oklch(0.083 0.022 145);
-
-  /* ── Texte principal : blanc cassé ── */
   --foreground: oklch(0.95 0.008 145);
-
-  /* ── Cartes : vert très sombre #0d1a10 ── */
   --card: oklch(0.115 0.025 145);
   --card-foreground: oklch(0.95 0.008 145);
-
-  /* ── Popovers / dropdowns ── */
   --popover: oklch(0.115 0.025 145);
   --popover-foreground: oklch(0.95 0.008 145);
-
-  /* ── Primaire : Vert INSFS #009A44 ── */
   --primary: oklch(0.55 0.18 148);
   --primary-foreground: oklch(0.98 0 0);
-
-  /* ── Secondaire : vert sombre ── */
   --secondary: oklch(0.16 0.03 145);
   --secondary-foreground: oklch(0.88 0.01 145);
-
-  /* ── Muted ── */
   --muted: oklch(0.155 0.025 145);
   --muted-foreground: oklch(0.58 0.015 145);
-
-  /* ── Accent : vert légèrement plus clair ── */
   --accent: oklch(0.17 0.03 148);
   --accent-foreground: oklch(0.95 0.008 145);
-
-  /* ── Destructif : rouge ── */
   --destructive: oklch(0.65 0.22 25);
-
-  /* ── Bordures : vert subtil ── */
   --border: oklch(0.28 0.04 145 / 55%);
   --input: oklch(0.14 0.025 145);
   --ring: oklch(0.50 0.16 148);
-
-  /* ── Charts : orange + verts ── */
-  --chart-1: oklch(0.65 0.20 50);   /* orange ivoirien */
-  --chart-2: oklch(0.55 0.18 148);  /* vert INSFS */
-  --chart-3: oklch(0.72 0.16 148);  /* vert clair */
-  --chart-4: oklch(0.75 0.18 75);   /* jaune-or */
-  --chart-5: oklch(0.62 0.22 30);   /* orange foncé */
-
-  /* ── Sidebar : vert nuit #07100a ── */
+  --chart-1: oklch(0.65 0.20 50);
+  --chart-2: oklch(0.55 0.18 148);
+  --chart-3: oklch(0.72 0.16 148);
+  --chart-4: oklch(0.75 0.18 75);
+  --chart-5: oklch(0.62 0.22 30);
   --sidebar: oklch(0.095 0.022 145);
   --sidebar-foreground: oklch(0.95 0.008 145);
   --sidebar-primary: oklch(0.55 0.18 148);
@@ -149,4 +149,10 @@
   body {
     @apply bg-background text-foreground;
   }
+}
+
+/* Ombre card en mode clair */
+:root .card-elevated,
+:root [data-card-elevated] {
+  box-shadow: 0 1px 3px 0 oklch(0.12 0.025 145 / 8%), 0 1px 2px -1px oklch(0.12 0.025 145 / 8%);
 }
