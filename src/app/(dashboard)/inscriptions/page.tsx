@@ -13,7 +13,7 @@ import {
 } from "@/components/ui/select";
 import {
   BookOpen, Search, Eye, ChevronLeft, ChevronRight,
-  PlusCircle, Loader2, Filter, X, CheckCircle, Clock, XCircle,
+  PlusCircle, Loader2, Filter, X, CheckCircle, Clock, XCircle, Printer,
 } from "lucide-react";
 import type { PaginatedResponse, Enrollment, School, AcademicYear } from "@/types";
 import { getSchool, SCHOOL_CONFIG } from "@/lib/schools";
@@ -84,6 +84,33 @@ export default function InscriptionsPage() {
   const canCreate = user?.role === "ADMIN" || user?.role === "SCOLARITE";
   const activeFilters = [filterSchool, filterYear, filterStatus].filter((f) => f !== "all").length;
 
+  const handlePrint = () => {
+    if (!enrollments?.data) return;
+    const rows = enrollments.data.map((e, i) => `
+      <tr>
+        <td>${(page - 1) * 15 + i + 1}</td>
+        <td>${e.student ? `${e.student.last_name} ${e.student.first_name}` : "—"}</td>
+        <td>${e.student?.matricule ?? "—"}</td>
+        <td>${e.school?.code ?? "—"}</td>
+        <td>${e.academic_year?.label ?? "—"}</td>
+        <td>${e.quality}</td>
+        <td>${STATUS_CONFIG[e.status]?.label ?? e.status}</td>
+      </tr>`).join("");
+    const html = `<!DOCTYPE html><html><head><meta charset="utf-8"><title>Liste des Inscriptions</title>
+    <style>body{font-family:Arial,sans-serif;font-size:12px;color:#111}h1{font-size:16px;margin-bottom:4px}p{color:#666;margin-bottom:12px}
+    table{width:100%;border-collapse:collapse}th{background:#f5f5f5;font-weight:600;text-align:left;padding:6px 10px;border-bottom:2px solid #ddd;font-size:11px;text-transform:uppercase}
+    td{padding:6px 10px;border-bottom:1px solid #eee}tr:nth-child(even) td{background:#fafafa}
+    @media print{body{margin:12mm}}</style></head>
+    <body><h1>Liste des Inscriptions — INSFS</h1>
+    <p>Imprimé le ${new Date().toLocaleDateString("fr-FR")} · ${enrollments.total} inscription(s) au total</p>
+    <table><thead><tr><th>#</th><th>Étudiant</th><th>Matricule</th><th>École</th><th>Année</th><th>Qualité</th><th>Statut</th></tr></thead>
+    <tbody>${rows}</tbody></table></body></html>`;
+    const w = window.open("", "_blank", "width=900,height=650");
+    w?.document.write(html);
+    w?.document.close();
+    setTimeout(() => w?.print(), 400);
+  };
+
   const statusCounts = {
     EN_COURS: enrollments?.data.filter((e) => e.status === "EN_COURS").length ?? 0,
     VALIDE:   enrollments?.data.filter((e) => e.status === "VALIDE").length ?? 0,
@@ -106,14 +133,26 @@ export default function InscriptionsPage() {
               : "Chargement..."}
           </p>
         </div>
-        {canCreate && (
-          <Link href="/etudiants">
-            <Button className="bg-primary hover:bg-primary/90 text-primary-foreground gap-2 shadow-sm rounded-xl h-10 px-5">
-              <PlusCircle className="w-4 h-4" />
-              Nouvelle inscription
-            </Button>
-          </Link>
-        )}
+        <div className="flex items-center gap-2">
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={handlePrint}
+            disabled={!enrollments?.data?.length}
+            className="h-10 px-4 gap-2 rounded-xl"
+          >
+            <Printer className="w-4 h-4" />
+            Imprimer
+          </Button>
+          {canCreate && (
+            <Link href="/etudiants">
+              <Button className="bg-primary hover:bg-primary/90 text-primary-foreground gap-2 shadow-sm rounded-xl h-10 px-5">
+                <PlusCircle className="w-4 h-4" />
+                Nouvelle inscription
+              </Button>
+            </Link>
+          )}
+        </div>
       </div>
 
       {/* ── Status pills summary ── */}
@@ -231,6 +270,9 @@ export default function InscriptionsPage() {
               <table className="w-full text-sm">
                 <thead>
                   <tr className="border-b border-border bg-muted/50">
+                    <th className="text-left px-4 py-3.5 text-xs font-semibold text-muted-foreground uppercase tracking-wider w-10">
+                      #
+                    </th>
                     <th className="text-left px-5 py-3.5 text-xs font-semibold text-muted-foreground uppercase tracking-wider">
                       Étudiant
                     </th>
@@ -252,7 +294,7 @@ export default function InscriptionsPage() {
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-border">
-                  {enrollments?.data.map((enrollment) => {
+                  {enrollments?.data.map((enrollment, idx) => {
                     const schoolCode = enrollment.school?.code;
                     const schoolCfg = getSchool(schoolCode);
                     const statusCfg = STATUS_CONFIG[enrollment.status];
@@ -260,6 +302,7 @@ export default function InscriptionsPage() {
                     const initials = enrollment.student
                       ? `${enrollment.student.last_name[0] ?? ""}${enrollment.student.first_name[0] ?? ""}`.toUpperCase()
                       : "??";
+                    const rowNumber = (page - 1) * 15 + idx + 1;
 
                     return (
                       <tr
@@ -269,6 +312,10 @@ export default function InscriptionsPage() {
                           schoolCfg.rowBorder
                         )}
                       >
+                        {/* Numéro */}
+                        <td className="px-4 py-3.5 text-xs text-muted-foreground/60 font-mono w-10">
+                          {rowNumber}
+                        </td>
                         {/* Étudiant */}
                         <td className="px-5 py-3.5">
                           <div className="flex items-center gap-3">

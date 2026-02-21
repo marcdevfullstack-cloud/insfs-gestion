@@ -11,7 +11,7 @@ import { Input } from "@/components/ui/input";
 import { Card, CardContent } from "@/components/ui/card";
 import {
   Plus, Search, Eye, Pencil, Loader2, Users,
-  ChevronLeft, ChevronRight, X, Phone, Mail,
+  ChevronLeft, ChevronRight, X, Phone, Mail, Printer,
 } from "lucide-react";
 import type { Student, PaginatedResponse } from "@/types";
 import { useDebounce } from "@/hooks/useDebounce";
@@ -48,6 +48,33 @@ export default function EtudiantsPage() {
   const canCreate = user?.role === "ADMIN" || user?.role === "SCOLARITE";
   const school = getSchool(schoolParam);
 
+  const handlePrint = () => {
+    if (!data?.data) return;
+    const rows = data.data.map((s, i) => `
+      <tr>
+        <td>${(page - 1) * 15 + i + 1}</td>
+        <td>${s.matricule}</td>
+        <td>${s.last_name} ${s.first_name}</td>
+        <td>${s.gender === "M" ? "Masculin" : "Féminin"}</td>
+        <td>${s.status_type}</td>
+        <td>${s.entry_mode}</td>
+        <td>${s.phone ?? "—"}</td>
+      </tr>`).join("");
+    const html = `<!DOCTYPE html><html><head><meta charset="utf-8"><title>Liste des Étudiants</title>
+    <style>body{font-family:Arial,sans-serif;font-size:12px;color:#111}h1{font-size:16px;margin-bottom:4px}p{color:#666;margin-bottom:12px}
+    table{width:100%;border-collapse:collapse}th{background:#f5f5f5;font-weight:600;text-align:left;padding:6px 10px;border-bottom:2px solid #ddd;font-size:11px;text-transform:uppercase}
+    td{padding:6px 10px;border-bottom:1px solid #eee}tr:nth-child(even) td{background:#fafafa}
+    @media print{body{margin:12mm}}</style></head>
+    <body><h1>Liste des Étudiants — INSFS</h1>
+    <p>Imprimé le ${new Date().toLocaleDateString("fr-FR")} · ${data.total} étudiant(s) au total${schoolParam ? ` · École : ${schoolParam}` : ""}</p>
+    <table><thead><tr><th>#</th><th>Matricule</th><th>Nom complet</th><th>Genre</th><th>Statut</th><th>Mode entrée</th><th>Téléphone</th></tr></thead>
+    <tbody>${rows}</tbody></table></body></html>`;
+    const w = window.open("", "_blank", "width=900,height=650");
+    w?.document.write(html);
+    w?.document.close();
+    setTimeout(() => w?.print(), 400);
+  };
+
   const { data, isLoading, isError } = useQuery({
     queryKey: ["students", debouncedSearch, page, schoolParam],
     queryFn: () =>
@@ -77,14 +104,26 @@ export default function EtudiantsPage() {
               : "Chargement..."}
           </p>
         </div>
-        {canCreate && (
-          <Link href="/etudiants/nouveau">
-            <Button className="bg-primary hover:bg-primary/90 text-primary-foreground gap-2 shadow-sm rounded-xl h-10 px-5">
-              <Plus className="w-4 h-4" />
-              Nouvel étudiant
-            </Button>
-          </Link>
-        )}
+        <div className="flex items-center gap-2">
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={handlePrint}
+            disabled={!data?.data?.length}
+            className="h-10 px-4 gap-2 rounded-xl"
+          >
+            <Printer className="w-4 h-4" />
+            Imprimer
+          </Button>
+          {canCreate && (
+            <Link href="/etudiants/nouveau">
+              <Button className="bg-primary hover:bg-primary/90 text-primary-foreground gap-2 shadow-sm rounded-xl h-10 px-5">
+                <Plus className="w-4 h-4" />
+                Nouvel étudiant
+              </Button>
+            </Link>
+          )}
+        </div>
       </div>
 
       {/* ── Filtre école actif ── */}
@@ -169,6 +208,9 @@ export default function EtudiantsPage() {
               <table className="w-full text-sm">
                 <thead>
                   <tr className="border-b border-border bg-muted/50">
+                    <th className="text-left px-4 py-3.5 text-xs font-semibold text-muted-foreground uppercase tracking-wider w-10">
+                      #
+                    </th>
                     <th className="text-left px-5 py-3.5 text-xs font-semibold text-muted-foreground uppercase tracking-wider">
                       Étudiant
                     </th>
@@ -190,14 +232,19 @@ export default function EtudiantsPage() {
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-border">
-                  {data?.data.map((student) => {
+                  {data?.data.map((student, idx) => {
                     const statusCfg = getStudentStatus(student.status_type);
                     const initials = `${student.last_name[0] ?? ""}${student.first_name[0] ?? ""}`.toUpperCase();
+                    const rowNumber = (page - 1) * 15 + idx + 1;
                     return (
                       <tr
                         key={student.id}
                         className="hover:bg-accent/40 transition-colors group"
                       >
+                        {/* Numéro */}
+                        <td className="px-4 py-3.5 text-xs text-muted-foreground/60 font-mono w-10">
+                          {rowNumber}
+                        </td>
                         {/* Étudiant */}
                         <td className="px-5 py-3.5">
                           <div className="flex items-center gap-3">

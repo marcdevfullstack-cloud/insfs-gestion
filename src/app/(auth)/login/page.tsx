@@ -3,6 +3,7 @@
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import Image from "next/image";
+import Link from "next/link";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
@@ -12,7 +13,7 @@ import { useAuth } from "@/hooks/useAuth";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { AlertCircle, Loader2, Lock, Mail, Eye, EyeOff } from "lucide-react";
+import { AlertCircle, Loader2, Lock, Mail, Eye, EyeOff, ArrowLeft } from "lucide-react";
 import type { LoginResponse } from "@/types";
 
 const loginSchema = z.object({
@@ -22,10 +23,10 @@ const loginSchema = z.object({
 
 type LoginForm = z.infer<typeof loginSchema>;
 
-const demoAccounts = [
-  { role: "Admin",     email: "admin@insfs.ci",       color: "#F77F00" },
-  { role: "Scolarité", email: "scolarite@insfs.ci",   color: "#009A44" },
-  { role: "Compta",    email: "comptabilite@insfs.ci", color: "#F77F00" },
+const DEMO_ACCOUNTS = [
+  { role: "Administrateur",  email: "admin@insfs.ci",        color: "#D4710A", bg: "#FFF8EF" },
+  { role: "Scolarité",       email: "scolarite@insfs.ci",    color: "#14623A", bg: "#F0F9F4" },
+  { role: "Comptabilité",    email: "comptabilite@insfs.ci", color: "#D4710A", bg: "#FFF8EF" },
 ];
 
 export default function LoginPage() {
@@ -55,176 +56,269 @@ export default function LoginPage() {
   };
 
   return (
-    <div
-      className="min-h-screen relative flex items-center justify-center p-4 overflow-hidden"
-      style={{
-        background: "linear-gradient(150deg, #020805 0%, #061008 35%, #071408 65%, #030a05 100%)",
-      }}
-    >
-      {/* Lueurs arrière-plan */}
-      <div className="absolute -top-40 -left-40 w-[500px] h-[500px] rounded-full pointer-events-none"
-        style={{ background: "radial-gradient(circle, rgba(247,127,0,0.12) 0%, transparent 65%)" }} />
-      <div className="absolute -bottom-40 -right-40 w-[600px] h-[600px] rounded-full pointer-events-none"
-        style={{ background: "radial-gradient(circle, rgba(0,154,68,0.12) 0%, transparent 65%)" }} />
-      <div className="absolute top-0 left-1/2 -translate-x-1/2 w-full h-px"
-        style={{ background: "linear-gradient(90deg, transparent, rgba(0,154,68,0.4), transparent)" }} />
+    <div className="min-h-screen flex" style={{ fontFamily: "'Source Sans 3', 'Segoe UI', sans-serif" }}>
+      <style>{`@import url('https://fonts.googleapis.com/css2?family=Merriweather:wght@400;700&family=Source+Sans+3:wght@400;500;600&display=swap');`}</style>
 
-      {/* Bande drapeau verticale gauche */}
-      <div className="absolute left-0 top-0 bottom-0 w-1.5 flex flex-col">
-        <div className="flex-1 bg-[#F77F00]" />
-        <div className="flex-1 bg-white/20" />
-        <div className="flex-1 bg-[#009A44]" />
-      </div>
+      {/* ── LEFT: Hero panel (masqué sur mobile) ── */}
+      <div className="hidden lg:flex flex-1 flex-col relative overflow-hidden">
+        {/* Image de fond */}
+        {/* eslint-disable-next-line @next/next/no-img-element */}
+        <img
+          src="https://images.unsplash.com/photo-1523050854058-8df90110c8f1?w=1400&q=80"
+          alt=""
+          className="absolute inset-0 w-full h-full object-cover"
+        />
+        {/* Overlay dégradé vert INSFS */}
+        <div
+          className="absolute inset-0"
+          style={{
+            background: "linear-gradient(150deg, rgba(20,98,58,0.93) 0%, rgba(10,50,25,0.88) 55%, rgba(0,0,0,0.72) 100%)",
+          }}
+        />
 
-      <div className="w-full max-w-sm relative z-10 space-y-7">
-
-        {/* ── Logo INSFS ── */}
-        <div className="text-center space-y-4">
-          <div className="flex justify-center">
-            <div className="relative w-24 h-24 rounded-2xl overflow-hidden shadow-2xl ring-2 ring-white/10"
-              style={{ boxShadow: "0 0 50px rgba(0,154,68,0.25), 0 0 25px rgba(247,127,0,0.12)" }}>
-              <Image
-                src="/insfs-logo.jpg"
-                alt="Logo INSFS"
-                fill
-                className="object-cover"
-                priority
-              />
-            </div>
+        {/* Contenu centré */}
+        <div className="relative z-10 flex flex-col items-center justify-center flex-1 px-14 text-white text-center">
+          {/* Logo */}
+          <div
+            className="w-28 h-28 rounded-2xl overflow-hidden mb-8 shadow-2xl"
+            style={{ border: "3px solid rgba(255,255,255,0.25)" }}
+          >
+            <Image
+              src="/insfs-logo.jpg"
+              alt="Logo INSFS"
+              width={112}
+              height={112}
+              className="object-cover w-full h-full"
+              priority
+            />
           </div>
-          <div>
-            <h1 className="text-3xl font-bold text-white tracking-widest">INSFS</h1>
-            <p className="text-sm mt-1 font-medium" style={{ color: "#009A44" }}>
-              Institut National de Formation Sociale
+
+          {/* Nom */}
+          <h1
+            className="text-5xl font-bold mb-3 tracking-widest"
+            style={{ fontFamily: "'Merriweather', Georgia, serif" }}
+          >
+            INSFS
+          </h1>
+          <p
+            className="text-lg font-light opacity-90 mb-1"
+            style={{ fontFamily: "'Merriweather', Georgia, serif" }}
+          >
+            Institut National de Formation Sociale
+          </p>
+          <p className="text-sm opacity-50 mb-12">Côte d&apos;Ivoire</p>
+
+          {/* Encart tagline */}
+          <div
+            className="rounded-2xl px-8 py-5 max-w-xs"
+            style={{
+              background: "rgba(255,255,255,0.10)",
+              backdropFilter: "blur(10px)",
+              border: "1px solid rgba(255,255,255,0.15)",
+            }}
+          >
+            <p className="text-sm leading-relaxed opacity-85">
+              Plateforme de gestion des inscriptions, des paiements et des documents académiques.
             </p>
-            <p className="text-xs text-white/30 mt-1">Côte d&apos;Ivoire</p>
           </div>
         </div>
 
-        {/* ── Carte formulaire ── */}
-        <div
-          className="rounded-2xl overflow-hidden"
-          style={{
-            background: "rgba(11, 22, 14, 0.88)",
-            border: "1px solid rgba(0,154,68,0.2)",
-            boxShadow: "0 30px 70px rgba(0,0,0,0.5), inset 0 1px 0 rgba(255,255,255,0.05)",
-          }}
-        >
-          <div className="px-6 pt-6 pb-1">
-            <h2 className="text-xl font-semibold text-white">Connexion</h2>
-            <p className="text-sm text-white/40 mt-0.5">Plateforme de gestion des inscriptions</p>
+        {/* Bandes drapeau CI */}
+        <div className="relative z-10 flex h-2">
+          <div className="flex-1" style={{ background: "#F77F00" }} />
+          <div className="flex-1 bg-white" />
+          <div className="flex-1" style={{ background: "#009A44" }} />
+        </div>
+      </div>
+
+      {/* ── RIGHT: Panneau formulaire ── */}
+      <div
+        className="w-full lg:w-[480px] flex flex-col min-h-screen overflow-y-auto"
+        style={{ background: "#FDFBF8" }}
+      >
+        {/* Lien retour */}
+        <div className="px-10 pt-8">
+          <Link
+            href="/"
+            className="inline-flex items-center gap-1.5 text-sm font-semibold transition-opacity hover:opacity-70"
+            style={{ color: "#14623A" }}
+          >
+            <ArrowLeft className="w-4 h-4" />
+            Retour au site
+          </Link>
+        </div>
+
+        {/* Formulaire */}
+        <div className="flex-1 flex flex-col justify-center px-10 py-8">
+          {/* Titre */}
+          <div className="mb-8">
+            <h2
+              className="text-3xl font-bold mb-2"
+              style={{ fontFamily: "'Merriweather', Georgia, serif", color: "#1C2A3A" }}
+            >
+              Connexion
+            </h2>
+            <p className="text-sm" style={{ color: "#6B7A8D" }}>
+              Accédez à votre espace de gestion INSFS
+            </p>
           </div>
 
-          <div className="px-6 pb-6 pt-5">
-            <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
-              {serverError && (
-                <div className="flex items-center gap-2.5 p-3 rounded-xl text-sm"
-                  style={{ background: "rgba(239,68,68,0.1)", border: "1px solid rgba(239,68,68,0.2)" }}>
-                  <AlertCircle className="w-4 h-4 text-red-400 shrink-0" />
-                  <span className="text-red-300">{serverError}</span>
-                </div>
-              )}
+          <form onSubmit={handleSubmit(onSubmit)} className="space-y-5">
+            {/* Erreur serveur */}
+            {serverError && (
+              <div
+                className="flex items-center gap-2.5 p-3.5 rounded-xl text-sm"
+                style={{ background: "#FEF2F2", border: "1px solid #FECACA", color: "#DC2626" }}
+              >
+                <AlertCircle className="w-4 h-4 shrink-0" />
+                {serverError}
+              </div>
+            )}
 
-              {/* Email */}
-              <div className="space-y-1.5">
-                <Label htmlFor="email" className="text-white/70 text-sm flex items-center gap-1.5">
-                  <Mail className="w-3.5 h-3.5 text-[#009A44]" />
-                  Adresse email
-                </Label>
+            {/* Email */}
+            <div className="space-y-2">
+              <Label
+                htmlFor="email"
+                className="text-sm font-semibold"
+                style={{ color: "#1C2A3A" }}
+              >
+                Adresse email
+              </Label>
+              <div className="relative">
+                <Mail
+                  className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 pointer-events-none"
+                  style={{ color: "#9CA3AF" }}
+                />
                 <Input
                   id="email"
                   type="email"
                   placeholder="admin@insfs.ci"
                   autoComplete="email"
                   {...register("email")}
-                  className="h-11 text-white placeholder:text-white/20 rounded-xl"
+                  className="pl-10 h-12 rounded-xl text-sm border"
                   style={{
-                    background: "rgba(6,14,8,0.9)",
-                    border: "1px solid rgba(0,154,68,0.25)",
+                    background: "#FFFFFF",
+                    borderColor: errors.email ? "#EF4444" : "#E5E7EB",
+                    color: "#1C2A3A",
                   }}
                 />
-                {errors.email && <p className="text-red-400 text-xs">{errors.email.message}</p>}
               </div>
+              {errors.email && (
+                <p className="text-red-500 text-xs">{errors.email.message}</p>
+              )}
+            </div>
 
-              {/* Mot de passe */}
-              <div className="space-y-1.5">
-                <Label htmlFor="password" className="text-white/70 text-sm flex items-center gap-1.5">
-                  <Lock className="w-3.5 h-3.5 text-[#009A44]" />
-                  Mot de passe
-                </Label>
-                <div className="relative">
-                  <Input
-                    id="password"
-                    type={showPassword ? "text" : "password"}
-                    placeholder="••••••••"
-                    autoComplete="current-password"
-                    {...register("password")}
-                    className="h-11 text-white placeholder:text-white/20 rounded-xl pr-11"
-                    style={{
-                      background: "rgba(6,14,8,0.9)",
-                      border: "1px solid rgba(0,154,68,0.25)",
-                    }}
-                  />
-                  <button
-                    type="button"
-                    onClick={() => setShowPassword(!showPassword)}
-                    className="absolute right-3 top-1/2 -translate-y-1/2 text-white/30 hover:text-white/60 transition-colors"
-                  >
-                    {showPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
-                  </button>
-                </div>
-                {errors.password && <p className="text-red-400 text-xs">{errors.password.message}</p>}
-              </div>
-
-              {/* Bouton connexion */}
-              <Button
-                type="submit"
-                className="w-full h-11 font-semibold text-white rounded-xl mt-2 transition-all duration-200"
-                style={{ background: "linear-gradient(135deg, #009A44, #007A33)" }}
-                disabled={isSubmitting}
+            {/* Mot de passe */}
+            <div className="space-y-2">
+              <Label
+                htmlFor="password"
+                className="text-sm font-semibold"
+                style={{ color: "#1C2A3A" }}
               >
-                {isSubmitting ? (
-                  <><Loader2 className="w-4 h-4 mr-2 animate-spin" />Connexion...</>
-                ) : (
-                  "Se connecter"
-                )}
-              </Button>
-            </form>
+                Mot de passe
+              </Label>
+              <div className="relative">
+                <Lock
+                  className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 pointer-events-none"
+                  style={{ color: "#9CA3AF" }}
+                />
+                <Input
+                  id="password"
+                  type={showPassword ? "text" : "password"}
+                  placeholder="••••••••"
+                  autoComplete="current-password"
+                  {...register("password")}
+                  className="pl-10 pr-11 h-12 rounded-xl text-sm border"
+                  style={{
+                    background: "#FFFFFF",
+                    borderColor: errors.password ? "#EF4444" : "#E5E7EB",
+                    color: "#1C2A3A",
+                  }}
+                />
+                <button
+                  type="button"
+                  onClick={() => setShowPassword(!showPassword)}
+                  className="absolute right-3.5 top-1/2 -translate-y-1/2 transition-opacity hover:opacity-70"
+                  style={{ color: "#9CA3AF" }}
+                >
+                  {showPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+                </button>
+              </div>
+              {errors.password && (
+                <p className="text-red-500 text-xs">{errors.password.message}</p>
+              )}
+            </div>
 
-            {/* Comptes démo */}
-            <div className="mt-6 pt-5" style={{ borderTop: "1px solid rgba(0,154,68,0.15)" }}>
-              <p className="text-xs text-center text-white/25 mb-3">Comptes de démonstration</p>
-              <div className="grid grid-cols-3 gap-2">
-                {demoAccounts.map((acc) => (
-                  <button
-                    key={acc.role}
-                    type="button"
-                    onClick={() => setValue("email", acc.email)}
-                    className="text-center px-2 py-2.5 rounded-xl transition-all hover:scale-105 active:scale-95"
-                    style={{
-                      background: "rgba(0,0,0,0.35)",
-                      border: `1px solid ${acc.color}20`,
-                    }}
-                  >
-                    <div className="text-xs font-semibold mb-0.5" style={{ color: acc.color }}>
+            {/* Bouton connexion */}
+            <Button
+              type="submit"
+              disabled={isSubmitting}
+              className="w-full h-12 font-semibold text-white rounded-xl text-sm mt-1 border-0 transition-opacity hover:opacity-90"
+              style={{ background: "linear-gradient(135deg, #D4710A 0%, #B85E08 100%)" }}
+            >
+              {isSubmitting ? (
+                <>
+                  <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                  Connexion en cours...
+                </>
+              ) : (
+                "Se connecter"
+              )}
+            </Button>
+          </form>
+
+          {/* Comptes démo */}
+          <div className="mt-8 pt-6" style={{ borderTop: "1px solid #E9E4DC" }}>
+            <p
+              className="text-xs font-semibold uppercase tracking-wider mb-4"
+              style={{ color: "#9CA3AF" }}
+            >
+              Comptes de démonstration
+            </p>
+            <div className="space-y-2.5">
+              {DEMO_ACCOUNTS.map((acc) => (
+                <button
+                  key={acc.role}
+                  type="button"
+                  onClick={() => {
+                    setValue("email", acc.email);
+                    setValue("password", "insfs2026");
+                  }}
+                  className="w-full flex items-center justify-between px-4 py-3 rounded-xl text-left transition-all hover:scale-[1.02] active:scale-[0.99]"
+                  style={{
+                    background: acc.bg,
+                    border: `1px solid ${acc.color}25`,
+                  }}
+                >
+                  <div>
+                    <div
+                      className="text-sm font-semibold"
+                      style={{ color: "#1C2A3A" }}
+                    >
                       {acc.role}
                     </div>
-                    <div className="text-xs text-white/25 truncate">
-                      {acc.email.split("@")[0]}
+                    <div className="text-xs" style={{ color: "#6B7A8D" }}>
+                      {acc.email}
                     </div>
-                  </button>
-                ))}
-              </div>
-              <p className="text-xs text-center mt-3 text-white/20">
-                Mot de passe : <span className="text-white/40 font-mono">insfs2026</span>
-              </p>
+                  </div>
+                  <span
+                    className="text-xs font-mono px-2.5 py-1 rounded-lg shrink-0"
+                    style={{ background: acc.color + "18", color: acc.color }}
+                  >
+                    insfs2026
+                  </span>
+                </button>
+              ))}
             </div>
           </div>
         </div>
 
-        <p className="text-center text-xs text-white/20">
-          © 2026 INSFS — Ministère de la Femme, de la Famille et de l&apos;Enfant
-        </p>
+        {/* Footer */}
+        <div className="px-10 pb-8 text-center">
+          <p className="text-xs" style={{ color: "#B0BAC9" }}>
+            © 2026 INSFS — Ministère de la Femme, de la Famille et de l&apos;Enfant
+          </p>
+        </div>
       </div>
     </div>
   );

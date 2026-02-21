@@ -58,6 +58,8 @@ export interface Student {
   diploma_bac: boolean;
   diploma_bac_serie?: string;
   other_diplomas?: string;
+  is_blocked: boolean;
+  block_reason?: string;
   enrollments?: Enrollment[];
   created_at: string;
   updated_at: string;

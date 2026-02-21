@@ -1,176 +1,305 @@
+"use client";
+
+import { useEffect, useRef, useState } from "react";
 import Link from "next/link";
 import Image from "next/image";
-import { ArrowRight, Users, BookOpen, CreditCard, FileText, Shield } from "lucide-react";
+import { ArrowRight } from "lucide-react";
 
-const features = [
-  {
-    icon: Users,
-    title: "Gestion des étudiants",
-    description: "Enregistrement, suivi et gestion complète des dossiers étudiants avec photo d'identité.",
-    color: "text-emerald-600",
-    bg: "bg-emerald-50",
-  },
-  {
-    icon: BookOpen,
-    title: "Inscriptions",
-    description: "Suivi des inscriptions par école, année académique et statut, avec gestion multi-établissements.",
-    color: "text-orange-600",
-    bg: "bg-orange-50",
-  },
-  {
-    icon: CreditCard,
-    title: "Paiements & comptabilité",
-    description: "Enregistrement des paiements en tranches, suivi du recouvrement et bilan financier.",
-    color: "text-blue-600",
-    bg: "bg-blue-50",
-  },
-  {
-    icon: FileText,
-    title: "Documents officiels",
-    description: "Génération automatique des certificats d'inscription et fiches de renseignements avec QR code.",
-    color: "text-violet-600",
-    bg: "bg-violet-50",
-  },
+const FEATURES = [
+  { icon: "📋", title: "Inscription Numérique",    desc: "Formulaire complet avec photo, état civil, diplômes et statut. Zéro papier." },
+  { icon: "🔢", title: "Matricule Automatique",    desc: "Attribution séquentielle INSFS-XXXX. Unicité garantie." },
+  { icon: "🔍", title: "Recherche Instantanée",    desc: "Retrouvez tout étudiant en moins de 2 secondes par nom ou matricule." },
+  { icon: "💰", title: "Suivi Financier",          desc: "Multi-tranches, espèces, virement, mobile money — suivi du recouvrement." },
+  { icon: "📄", title: "Documents Officiels",      desc: "Certificats et fiches avec en-tête ministériel et QR code d'authenticité." },
+  { icon: "📊", title: "Pilotage Décisionnel",     desc: "Tableau de bord : effectifs, répartition par école, taux de recouvrement." },
 ];
 
-const schools = [
-  { code: "EES", name: "École des Éducateurs Spécialisés" },
-  { code: "EEP", name: "École des Éducateurs de la Petite Enfance" },
-  { code: "EAS", name: "École des Assistants Sociaux" },
-  { code: "CPPE", name: "Centre de Perfectionnement pour Professionnels de l'Enfance" },
+const KPIS = [
+  { value: "4", label: "Établissements", color: "#14623A" },
+  { value: "3", label: "Rôles utilisateurs", color: "#D4710A" },
+  { value: "PDF", label: "Documents générés", color: "#2B6CB0" },
+  { value: "QR", label: "Code d'authenticité", color: "#B7791F" },
+];
+
+const SCHOOLS = [
+  { code: "EES",  name: "École des Éducateurs Spécialisés",          bg: "#D4710A" },
+  { code: "EEP",  name: "École des Éducateurs de la Petite Enfance", bg: "#14623A" },
+  { code: "EAS",  name: "École des Assistants Sociaux",              bg: "#2B6CB0" },
+  { code: "CPPE", name: "Centre de Perfectionnement CPPE-Pilote",    bg: "#B7791F" },
 ];
 
 export default function LandingPage() {
-  return (
-    <div className="min-h-screen bg-white text-gray-900">
+  const containerRef = useRef<HTMLDivElement>(null);
+  const [scrollY, setScrollY] = useState(0);
+  const [visible, setVisible] = useState(false);
 
-      {/* ── Navigation ── */}
-      <header className="sticky top-0 z-50 bg-white/95 backdrop-blur border-b border-gray-200">
-        <div className="max-w-6xl mx-auto px-6 h-16 flex items-center justify-between">
-          <div className="flex items-center gap-3">
-            <div className="relative w-9 h-9 rounded-lg overflow-hidden border border-gray-200 shrink-0">
-              <Image src="/insfs-logo.jpg" alt="INSFS" fill className="object-cover" />
-            </div>
-            <div>
-              <div className="text-sm font-bold text-gray-900 tracking-wide">INSFS</div>
-              <div className="text-xs text-gray-500 leading-none">Côte d&apos;Ivoire</div>
-            </div>
+  useEffect(() => {
+    setVisible(true);
+    const el = containerRef.current;
+    if (!el) return;
+    const onScroll = () => setScrollY(el.scrollTop);
+    el.addEventListener("scroll", onScroll, { passive: true });
+    return () => el.removeEventListener("scroll", onScroll);
+  }, []);
+
+  const navScrolled = scrollY > 60;
+
+  return (
+    <div
+      ref={containerRef}
+      style={{ height: "100vh", overflowY: "auto", fontFamily: "'Source Sans 3', sans-serif", color: "#1C2A3A" }}
+    >
+      {/* ── Navbar ── */}
+      <nav style={{
+        position: "fixed", top: 0, left: 0, right: 0, zIndex: 100,
+        height: 64, display: "flex", alignItems: "center", justifyContent: "space-between",
+        padding: "0 40px",
+        background: navScrolled ? "rgba(253,251,248,.96)" : "transparent",
+        backdropFilter: navScrolled ? "blur(16px)" : "none",
+        borderBottom: navScrolled ? "1px solid #E2DCD4" : "none",
+        transition: "all .5s cubic-bezier(.4,0,.2,1)",
+      }}>
+        <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
+          <div style={{ position: "relative", width: 40, height: 40, borderRadius: 8, overflow: "hidden", border: "1px solid #E2DCD4", flexShrink: 0 }}>
+            <Image src="/insfs-logo.jpg" alt="INSFS" fill className="object-cover" />
           </div>
-          <Link
-            href="/login"
-            className="inline-flex items-center gap-2 px-4 py-2 rounded-lg bg-green-700 hover:bg-green-800 text-white text-sm font-medium transition-colors"
-          >
-            Connexion
-            <ArrowRight className="w-4 h-4" />
+          <div>
+            <div style={{ fontSize: 14, fontWeight: 700, fontFamily: "'Merriweather', serif" }}>INSFS</div>
+            <div style={{ fontSize: 9, color: "#8899AA", letterSpacing: 2, textTransform: "uppercase", fontWeight: 600 }}>Formation Sociale</div>
+          </div>
+        </div>
+        <div style={{ display: "flex", alignItems: "center", gap: 24, fontSize: 13, fontWeight: 600 }}>
+          <a href="#about" style={{ color: "#4A5568", textDecoration: "none" }}>À propos</a>
+          <a href="#features" style={{ color: "#4A5568", textDecoration: "none" }}>Fonctionnalités</a>
+          <a href="#schools" style={{ color: "#4A5568", textDecoration: "none" }}>Écoles</a>
+          <Link href="/login" style={{
+            background: "linear-gradient(135deg,#D4710A,#E8912A)", color: "#fff",
+            border: "none", padding: "10px 24px", borderRadius: 8, fontSize: 13, fontWeight: 700,
+            textDecoration: "none", boxShadow: "0 4px 16px #D4710A40",
+          }}>
+            Connexion →
           </Link>
         </div>
-      </header>
+      </nav>
 
       {/* ── Hero ── */}
-      <section className="max-w-6xl mx-auto px-6 py-20 text-center">
-        {/* Drapeau CI */}
-        <div className="flex justify-center mb-8">
-          <div className="flex h-6 w-10 rounded overflow-hidden shadow-sm">
-            <div className="flex-1 bg-orange-500" />
-            <div className="flex-1 bg-white border-y border-gray-200" />
-            <div className="flex-1 bg-green-700" />
+      <section style={{
+        position: "relative", minHeight: "100vh", display: "flex", alignItems: "center",
+        overflow: "hidden",
+        background: "linear-gradient(165deg,#FDFBF8 0%,#FFF8EF 40%,#F0F9F4 100%)",
+      }}>
+        {/* Cercles décoratifs */}
+        <div style={{ position: "absolute", top: -150, right: -100, width: 500, height: 500, borderRadius: "50%", background: "radial-gradient(circle,#FFECD2 0%,transparent 70%)", opacity: .6 }} />
+        <div style={{ position: "absolute", bottom: -100, left: -50, width: 400, height: 400, borderRadius: "50%", background: "radial-gradient(circle,#D1FAE5 0%,transparent 70%)", opacity: .5 }} />
+
+        {/* Image 1 */}
+        <div style={{
+          position: "absolute", top: "8%", right: "4%", width: 370, height: 410,
+          borderRadius: 16, overflow: "hidden", boxShadow: "0 30px 70px rgba(0,0,0,.1)",
+          transform: `rotate(2deg) translateY(${-scrollY * .1}px)`,
+          opacity: visible ? 1 : 0, transition: "opacity 1s ease .3s",
+        }}>
+          {/* eslint-disable-next-line @next/next/no-img-element */}
+          <img src="https://images.unsplash.com/photo-1523050854058-8df90110c8f1?w=800&q=80" style={{ width: "100%", height: "100%", objectFit: "cover" }} alt="" />
+          <div style={{ position: "absolute", inset: 0, background: "linear-gradient(0deg,rgba(20,98,58,.25) 0%,transparent 50%)" }} />
+        </div>
+
+        {/* Image 2 */}
+        <div style={{
+          position: "absolute", top: "55%", right: "1%", width: 190, height: 190,
+          borderRadius: 12, overflow: "hidden", boxShadow: "0 20px 50px rgba(0,0,0,.1)",
+          transform: `rotate(-3deg) translateY(${-scrollY * .07}px)`,
+          opacity: visible ? 1 : 0, transition: "opacity 1s ease .6s", border: "3px solid #fff",
+        }}>
+          {/* eslint-disable-next-line @next/next/no-img-element */}
+          <img src="https://images.unsplash.com/photo-1524178232363-1fb2b075b655?w=600&q=80" style={{ width: "100%", height: "100%", objectFit: "cover" }} alt="" />
+        </div>
+
+        {/* Contenu principal */}
+        <div style={{ position: "relative", zIndex: 2, maxWidth: 560, padding: "0 40px", marginTop: 20 }}>
+          <div style={{
+            display: "inline-flex", alignItems: "center", gap: 8,
+            background: "#14623A10", borderRadius: 6, padding: "5px 14px", marginBottom: 24,
+            opacity: visible ? 1 : 0, transform: visible ? "translateY(0)" : "translateY(20px)", transition: "all .8s ease .1s",
+          }}>
+            <div style={{ width: 6, height: 6, borderRadius: "50%", background: "#14623A" }} />
+            <span style={{ fontSize: 11, fontWeight: 700, color: "#14623A", letterSpacing: 1.5, textTransform: "uppercase" }}>
+              République de Côte d&apos;Ivoire
+            </span>
           </div>
-        </div>
 
-        <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full bg-green-50 border border-green-200 text-green-700 text-xs font-medium mb-6">
-          <Shield className="w-3.5 h-3.5" />
-          Plateforme officielle de l&apos;INSFS
-        </div>
+          <h1 style={{
+            fontSize: 50, fontWeight: 400, lineHeight: 1.1, margin: 0,
+            fontFamily: "'Merriweather', serif", letterSpacing: -.5,
+            opacity: visible ? 1 : 0, transform: visible ? "translateY(0)" : "translateY(30px)", transition: "all .8s ease .2s",
+          }}>
+            Institut National<br />
+            <span style={{ color: "#D4710A", fontWeight: 700 }}>Supérieur</span> de<br />
+            Formation <span style={{ color: "#14623A", fontWeight: 700 }}>Sociale</span>
+          </h1>
 
-        <h1 className="text-4xl sm:text-5xl font-bold text-gray-900 tracking-tight mb-4 leading-tight">
-          Institut National de<br />
-          <span className="text-green-700">Formation Sociale</span>
-        </h1>
-        <p className="text-lg text-gray-600 max-w-2xl mx-auto mb-8 leading-relaxed">
-          Plateforme de gestion des inscriptions, paiements et documents officiels
-          pour les quatre établissements de l&apos;INSFS de Côte d&apos;Ivoire.
-        </p>
+          <p style={{
+            fontSize: 16, color: "#4A5568", maxWidth: 430, margin: "20px 0 0", lineHeight: 1.8,
+            opacity: visible ? 1 : 0, transform: visible ? "translateY(0)" : "translateY(20px)", transition: "all .8s ease .4s",
+          }}>
+            Plateforme de gestion numérique des inscriptions, du suivi académique et de la production documentaire officielle.
+          </p>
 
-        <div className="flex flex-col sm:flex-row items-center justify-center gap-3">
-          <Link
-            href="/login"
-            className="inline-flex items-center gap-2 px-6 py-3 rounded-xl bg-green-700 hover:bg-green-800 text-white font-medium transition-colors shadow-sm"
-          >
-            Accéder à la plateforme
-            <ArrowRight className="w-4 h-4" />
-          </Link>
-          <div className="text-sm text-gray-500">
-            Réservé au personnel autorisé
+          <div style={{
+            marginTop: 32, display: "flex", gap: 12,
+            opacity: visible ? 1 : 0, transform: visible ? "translateY(0)" : "translateY(20px)", transition: "all .8s ease .5s",
+          }}>
+            <Link href="/login" style={{
+              background: "linear-gradient(135deg,#D4710A,#E8912A)", color: "#fff",
+              border: "none", padding: "14px 32px", borderRadius: 10, fontSize: 15, fontWeight: 700,
+              textDecoration: "none", boxShadow: "0 6px 28px #D4710A45",
+            }}>
+              Accéder à la plateforme
+            </Link>
+            <a href="#features" style={{
+              background: "#fff", color: "#1C2A3A", border: "1.5px solid #E2DCD4",
+              padding: "14px 24px", borderRadius: 10, fontSize: 15, fontWeight: 600, textDecoration: "none",
+            }}>
+              En savoir plus
+            </a>
           </div>
         </div>
       </section>
 
-      {/* ── Séparateur tricolore ── */}
-      <div className="max-w-6xl mx-auto px-6 mb-16">
-        <div className="flex h-0.5 rounded-full overflow-hidden">
-          <div className="flex-1 bg-orange-400" />
-          <div className="flex-1 bg-gray-200" />
-          <div className="flex-1 bg-green-600" />
-        </div>
-      </div>
-
-      {/* ── Fonctionnalités ── */}
-      <section className="max-w-6xl mx-auto px-6 pb-20">
-        <div className="text-center mb-12">
-          <h2 className="text-2xl font-bold text-gray-900 mb-2">Fonctionnalités de la plateforme</h2>
-          <p className="text-gray-500 text-sm">Un outil complet pour la gestion administrative</p>
-        </div>
-        <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
-          {features.map((f) => {
-            const Icon = f.icon;
-            return (
-              <div key={f.title} className="p-6 rounded-2xl border border-gray-200 hover:border-gray-300 hover:shadow-sm transition-all bg-white">
-                <div className={`w-10 h-10 rounded-xl ${f.bg} flex items-center justify-center mb-4`}>
-                  <Icon className={`w-5 h-5 ${f.color}`} />
-                </div>
-                <h3 className="font-semibold text-gray-900 mb-1.5">{f.title}</h3>
-                <p className="text-sm text-gray-500 leading-relaxed">{f.description}</p>
-              </div>
-            );
-          })}
-        </div>
-      </section>
-
-      {/* ── Établissements ── */}
-      <section className="bg-gray-50 border-y border-gray-200 py-16">
-        <div className="max-w-6xl mx-auto px-6">
-          <div className="text-center mb-10">
-            <h2 className="text-xl font-bold text-gray-900 mb-2">Les quatre établissements de l&apos;INSFS</h2>
+      {/* ── À propos ── */}
+      <section id="about" style={{ padding: "80px 40px", background: "#fff" }}>
+        <div style={{ maxWidth: 1000, margin: "0 auto", display: "grid", gridTemplateColumns: "1fr 1fr", gap: 48, alignItems: "center" }}>
+          <div>
+            <div style={{ fontSize: 11, fontWeight: 700, letterSpacing: 2, textTransform: "uppercase", color: "#D4710A", marginBottom: 12 }}>À propos</div>
+            <h2 style={{ fontSize: 32, fontWeight: 700, fontFamily: "'Merriweather', serif", margin: "0 0 16px", lineHeight: 1.3 }}>
+              L&apos;excellence dans la formation des travailleurs sociaux
+            </h2>
+            <p style={{ fontSize: 15, color: "#4A5568", lineHeight: 1.8, margin: 0 }}>
+              L&apos;INSFS forme depuis des décennies les éducateurs spécialisés, assistants sociaux et éducateurs préscolaires de Côte d&apos;Ivoire. Cette plateforme numérique modernise la gestion administrative pour un service plus rapide, fiable et transparent.
+            </p>
           </div>
-          <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-4">
-            {schools.map((s) => (
-              <div key={s.code} className="bg-white rounded-xl border border-gray-200 p-5 text-center">
-                <div className="inline-flex items-center justify-center px-3 py-1 rounded-lg bg-green-700 text-white text-sm font-bold mb-3">
-                  {s.code}
-                </div>
-                <div className="text-sm text-gray-700 font-medium leading-snug">{s.name}</div>
+          <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 16 }}>
+            {KPIS.map((k) => (
+              <div key={k.label} style={{ background: "#F8F6F2", borderRadius: 12, padding: "24px 20px", textAlign: "center", border: "1px solid #F2EFEA" }}>
+                <div style={{ fontSize: 34, fontWeight: 700, color: k.color, fontFamily: "'Merriweather', serif", lineHeight: 1 }}>{k.value}</div>
+                <div style={{ fontSize: 12, color: "#8899AA", marginTop: 8, fontWeight: 600 }}>{k.label}</div>
               </div>
             ))}
           </div>
         </div>
       </section>
 
-      {/* ── Footer ── */}
-      <footer className="max-w-6xl mx-auto px-6 py-8 text-center">
-        <div className="flex items-center justify-center gap-3 mb-3">
-          <div className="flex h-4 w-7 rounded overflow-hidden">
-            <div className="flex-1 bg-orange-500" />
-            <div className="flex-1 bg-white border-y border-gray-200" />
-            <div className="flex-1 bg-green-700" />
+      {/* ── Fonctionnalités ── */}
+      <section id="features" style={{ padding: "80px 40px", background: "#F8F6F2" }}>
+        <div style={{ maxWidth: 1000, margin: "0 auto" }}>
+          <div style={{ textAlign: "center", marginBottom: 48 }}>
+            <div style={{ fontSize: 11, fontWeight: 700, letterSpacing: 2, textTransform: "uppercase", color: "#14623A", marginBottom: 10 }}>Fonctionnalités</div>
+            <h2 style={{ fontSize: 32, fontWeight: 700, fontFamily: "'Merriweather', serif", margin: 0 }}>
+              Une solution <span style={{ color: "#D4710A" }}>complète</span>
+            </h2>
           </div>
-          <span className="text-xs text-gray-500">République de Côte d&apos;Ivoire</span>
+          <div style={{ display: "grid", gridTemplateColumns: "repeat(3,1fr)", gap: 16 }}>
+            {FEATURES.map((f, i) => (
+              <div
+                key={f.title}
+                style={{
+                  background: "#fff", borderRadius: 14, padding: "28px 22px",
+                  border: "1px solid #E2DCD4", transition: "all .3s cubic-bezier(.4,0,.2,1)",
+                  cursor: "default",
+                }}
+                onMouseEnter={(e) => {
+                  (e.currentTarget as HTMLElement).style.transform = "translateY(-4px)";
+                  (e.currentTarget as HTMLElement).style.boxShadow = "0 16px 48px rgba(0,0,0,.06)";
+                  (e.currentTarget as HTMLElement).style.borderColor = "#D4710A";
+                }}
+                onMouseLeave={(e) => {
+                  (e.currentTarget as HTMLElement).style.transform = "";
+                  (e.currentTarget as HTMLElement).style.boxShadow = "";
+                  (e.currentTarget as HTMLElement).style.borderColor = "#E2DCD4";
+                }}
+              >
+                <div style={{
+                  width: 44, height: 44, borderRadius: 10, marginBottom: 14,
+                  background: i % 2 === 0 ? "#FFF8EF" : "#F0F9F4",
+                  display: "flex", alignItems: "center", justifyContent: "center", fontSize: 20,
+                }}>
+                  {f.icon}
+                </div>
+                <h3 style={{ fontSize: 16, fontWeight: 700, margin: "0 0 6px", fontFamily: "'Merriweather', serif" }}>{f.title}</h3>
+                <p style={{ fontSize: 13.5, color: "#4A5568", lineHeight: 1.7, margin: 0 }}>{f.desc}</p>
+              </div>
+            ))}
+          </div>
         </div>
-        <p className="text-xs text-gray-400">
-          © {new Date().getFullYear()} INSFS — Institut National de Formation Sociale.
-          Ministère de la Femme, de la Famille et de l&apos;Enfant.
+      </section>
+
+      {/* ── Établissements ── */}
+      <section id="schools" style={{
+        padding: "80px 40px",
+        background: "linear-gradient(170deg,#F0F9F4 0%,#FFF8EF 100%)",
+      }}>
+        <div style={{ maxWidth: 1000, margin: "0 auto" }}>
+          <div style={{ textAlign: "center", marginBottom: 40 }}>
+            <div style={{ fontSize: 11, fontWeight: 700, letterSpacing: 2, textTransform: "uppercase", color: "#14623A", marginBottom: 10 }}>Établissements</div>
+            <h2 style={{ fontSize: 32, fontWeight: 700, fontFamily: "'Merriweather', serif", margin: 0 }}>
+              4 écoles, <span style={{ color: "#D4710A" }}>une mission</span>
+            </h2>
+          </div>
+          <div style={{ display: "grid", gridTemplateColumns: "repeat(4,1fr)", gap: 16 }}>
+            {SCHOOLS.map((s) => (
+              <div key={s.code} style={{
+                background: "rgba(255,255,255,.9)", backdropFilter: "blur(12px)",
+                borderRadius: 14, padding: "28px 20px", textAlign: "center",
+                boxShadow: "0 4px 20px rgba(0,0,0,.04)",
+              }}>
+                <div style={{
+                  width: 52, height: 52, borderRadius: 12, background: s.bg,
+                  display: "flex", alignItems: "center", justifyContent: "center",
+                  margin: "0 auto 14px", fontSize: 13, fontWeight: 800, color: "#fff",
+                  fontFamily: "'Merriweather', serif",
+                }}>
+                  {s.code}
+                </div>
+                <h4 style={{ fontSize: 13, fontWeight: 700, margin: "0 0 8px", fontFamily: "'Merriweather', serif", lineHeight: 1.4 }}>{s.name}</h4>
+                <div style={{ width: 30, height: 2, background: s.bg, margin: "0 auto", borderRadius: 1 }} />
+              </div>
+            ))}
+          </div>
+        </div>
+      </section>
+
+      {/* ── CTA ── */}
+      <section style={{
+        padding: "80px 40px", textAlign: "center",
+        background: "linear-gradient(135deg,#14623A,#D4710A)",
+      }}>
+        <h2 style={{ fontSize: 32, fontWeight: 700, margin: "0 0 12px", color: "#fff", fontFamily: "'Merriweather', serif" }}>
+          Modernisez la gestion de vos inscriptions
+        </h2>
+        <p style={{ fontSize: 15, color: "rgba(255,255,255,.75)", marginBottom: 32 }}>
+          Accédez à la plateforme sécurisée de l&apos;INSFS.
         </p>
+        <Link href="/login" style={{
+          background: "#fff", color: "#14623A", border: "none",
+          padding: "16px 40px", borderRadius: 10, fontSize: 15, fontWeight: 800,
+          textDecoration: "none", boxShadow: "0 8px 32px rgba(0,0,0,.15)",
+          display: "inline-flex", alignItems: "center", gap: 8,
+        }}>
+          Accéder à la plateforme <ArrowRight size={16} />
+        </Link>
+      </section>
+
+      {/* ── Footer ── */}
+      <footer style={{
+        padding: "24px 40px", background: "#1C2A3A",
+        textAlign: "center", fontSize: 12, color: "rgba(255,255,255,.4)",
+      }}>
+        INSFS · Cocody, Abidjan · Tél : 07 47 14 38 34 · infsofficiel@gmail.com · 01 BP 2625
       </footer>
 
+      <style>{`
+        @import url('https://fonts.googleapis.com/css2?family=Merriweather:wght@400;700&family=Source+Sans+3:wght@400;600;700&display=swap');
+      `}</style>
     </div>
   );
 }

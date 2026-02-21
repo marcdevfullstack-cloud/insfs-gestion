@@ -25,6 +25,7 @@ import {
   Loader2,
   CheckCircle2,
   Clock,
+  Star,
 } from "lucide-react";
 import type { AcademicYear, FeeSchedule, School } from "@/types";
 
@@ -37,6 +38,13 @@ type FeeFormData = {
   fee_type: string;
   total_amount: number;
   max_installments: number;
+};
+
+type YearFormData = {
+  label: string;
+  start_date: string;
+  end_date: string;
+  is_current: boolean;
 };
 
 const STATUS_OPTIONS = [
@@ -59,6 +67,8 @@ export default function ParametresPage() {
   const [editTarget, setEditTarget] = useState<FeeSchedule | null>(null);
   const [filterYear, setFilterYear] = useState("");
   const [filterSchool, setFilterSchool] = useState("");
+  const [yearDialogOpen, setYearDialogOpen] = useState(false);
+  const [settingCurrentYear, setSettingCurrentYear] = useState<string | null>(null);
 
   // ── Queries ─────────────────────────────────────────────────
   const { data: schools = [] } = useQuery({
@@ -94,7 +104,31 @@ export default function ParametresPage() {
     onSuccess: () => { qc.invalidateQueries({ queryKey: ["fee-schedules"] }); setDialogOpen(false); },
   });
 
+  const createYear = useMutation({
+    mutationFn: (data: YearFormData) => api.post<AcademicYear>("/academic-years", data),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ["academic-years"] });
+      setYearDialogOpen(false);
+      resetYear();
+    },
+  });
+
+  const setCurrentYear = useMutation({
+    mutationFn: (yearId: string) =>
+      api.patch<AcademicYear>(`/academic-years/${yearId}/set-current`),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ["academic-years"] });
+      setSettingCurrentYear(null);
+    },
+  });
+
   const { register, handleSubmit, reset, formState: { errors } } = useForm<FeeFormData>();
+  const {
+    register: registerYear,
+    handleSubmit: handleSubmitYear,
+    reset: resetYear,
+    formState: { errors: yearErrors },
+  } = useForm<YearFormData>({ defaultValues: { is_current: false } });
 
   const openCreate = () => {
     setEditTarget(null);
@@ -316,10 +350,20 @@ export default function ParametresPage() {
           {/* Liste toutes les années */}
           <Card className="bg-card shadow-sm">
             <CardHeader className="pb-3">
-              <CardTitle className="text-base font-semibold text-foreground flex items-center gap-2">
-                <Calendar className="w-4 h-4 text-muted-foreground" />
-                Historique des années académiques
-              </CardTitle>
+              <div className="flex items-center justify-between">
+                <CardTitle className="text-base font-semibold text-foreground flex items-center gap-2">
+                  <Calendar className="w-4 h-4 text-muted-foreground" />
+                  Historique des années académiques
+                </CardTitle>
+                <Button
+                  size="sm"
+                  onClick={() => { resetYear({ is_current: false }); setYearDialogOpen(true); }}
+                  className="bg-primary hover:bg-primary/90 text-primary-foreground gap-1.5"
+                >
+                  <Plus className="w-4 h-4" />
+                  Nouvelle année
+                </Button>
+              </div>
             </CardHeader>
             <CardContent className="p-0">
               {academicYears.length === 0 ? (
@@ -346,15 +390,36 @@ export default function ParametresPage() {
                             {new Date(year.end_date).toLocaleDateString("fr-FR")}
                           </div>
                         </div>
-                        {year.is_current ? (
-                          <Badge className="bg-green-600/10 text-green-700 dark:text-green-400 border-green-600/20 text-xs">
-                            En cours
-                          </Badge>
-                        ) : (
-                          <Badge variant="outline" className="text-muted-foreground text-xs">
-                            Clôturée
-                          </Badge>
-                        )}
+                        <div className="flex items-center gap-2">
+                          {year.is_current ? (
+                            <Badge className="bg-green-600/10 text-green-700 dark:text-green-400 border-green-600/20 text-xs">
+                              En cours
+                            </Badge>
+                          ) : (
+                            <>
+                              <Badge variant="outline" className="text-muted-foreground text-xs">
+                                Clôturée
+                              </Badge>
+                              <Button
+                                variant="ghost"
+                                size="sm"
+                                onClick={() => {
+                                  setSettingCurrentYear(year.id);
+                                  setCurrentYear.mutate(year.id);
+                                }}
+                                disabled={setCurrentYear.isPending && settingCurrentYear === year.id}
+                                className="h-7 px-2.5 text-xs text-muted-foreground hover:text-foreground gap-1"
+                              >
+                                {setCurrentYear.isPending && settingCurrentYear === year.id ? (
+                                  <Loader2 className="w-3 h-3 animate-spin" />
+                                ) : (
+                                  <Star className="w-3 h-3" />
+                                )}
+                                Définir courante
+                              </Button>
+                            </>
+                          )}
+                        </div>
                       </div>
                     ))}
                 </div>
@@ -363,6 +428,82 @@ export default function ParametresPage() {
           </Card>
         </div>
       )}
+
+      {/* ══════════════════════════════════════════════════════
+          DIALOG — Créer une année académique
+          ══════════════════════════════════════════════════════ */}
+      <Dialog open={yearDialogOpen} onOpenChange={setYearDialogOpen}>
+        <DialogContent className="max-w-md">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <Calendar className="w-5 h-5 text-primary" />
+              Nouvelle année académique
+            </DialogTitle>
+          </DialogHeader>
+
+          <form
+            onSubmit={handleSubmitYear((data) => createYear.mutate(data))}
+            className="space-y-4 mt-2"
+          >
+            <div>
+              <Label className="text-sm">Libellé (ex : 2026-2027)</Label>
+              <Input
+                {...registerYear("label", { required: "Obligatoire", pattern: { value: /^\d{4}-\d{4}$/, message: "Format attendu : AAAA-AAAA" } })}
+                placeholder="2026-2027"
+                className="mt-1"
+              />
+              {yearErrors.label && <p className="text-destructive text-xs mt-1">{yearErrors.label.message}</p>}
+            </div>
+
+            <div className="grid grid-cols-2 gap-4">
+              <div>
+                <Label className="text-sm">Date de début</Label>
+                <Input
+                  {...registerYear("start_date", { required: "Obligatoire" })}
+                  type="date"
+                  className="mt-1"
+                />
+                {yearErrors.start_date && <p className="text-destructive text-xs mt-1">{yearErrors.start_date.message}</p>}
+              </div>
+              <div>
+                <Label className="text-sm">Date de fin</Label>
+                <Input
+                  {...registerYear("end_date", { required: "Obligatoire" })}
+                  type="date"
+                  className="mt-1"
+                />
+                {yearErrors.end_date && <p className="text-destructive text-xs mt-1">{yearErrors.end_date.message}</p>}
+              </div>
+            </div>
+
+            <label className="flex items-center gap-2.5 cursor-pointer">
+              <input
+                type="checkbox"
+                {...registerYear("is_current")}
+                className="w-4 h-4 rounded accent-primary"
+              />
+              <span className="text-sm text-foreground">Définir comme année en cours</span>
+            </label>
+
+            {createYear.isError && (
+              <p className="text-destructive text-sm">
+                {(createYear.error as { response?: { data?: { message?: string } } })
+                  ?.response?.data?.message ?? "Une erreur s'est produite."}
+              </p>
+            )}
+
+            <div className="flex justify-end gap-3 pt-1">
+              <Button type="button" variant="outline" onClick={() => setYearDialogOpen(false)}>
+                Annuler
+              </Button>
+              <Button type="submit" disabled={createYear.isPending}>
+                {createYear.isPending && <Loader2 className="w-4 h-4 mr-2 animate-spin" />}
+                Créer l&apos;année
+              </Button>
+            </div>
+          </form>
+        </DialogContent>
+      </Dialog>
 
       {/* ══════════════════════════════════════════════════════
           DIALOG — Créer / modifier un tarif
