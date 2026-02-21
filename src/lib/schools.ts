@@ -21,6 +21,8 @@ export interface SchoolConfig {
   avatar: string;
   /** Carte dashboard (border-l-4) */
   cardBorder: string;
+  /** Barre de progression distribution */
+  barColor: string;
 }
 
 export const SCHOOL_CONFIG: Record<string, SchoolConfig> = {
@@ -35,6 +37,7 @@ export const SCHOOL_CONFIG: Record<string, SchoolConfig> = {
     rowBorder:  "border-l-emerald-500",
     avatar:     "bg-emerald-100 dark:bg-emerald-900/50 text-emerald-700 dark:text-emerald-300",
     cardBorder: "border-l-emerald-500",
+    barColor:   "bg-emerald-500",
   },
   EEP: {
     name: "École des Éducateurs Préscolaires",
@@ -47,6 +50,7 @@ export const SCHOOL_CONFIG: Record<string, SchoolConfig> = {
     rowBorder:  "border-l-sky-500",
     avatar:     "bg-sky-100 dark:bg-sky-900/50 text-sky-700 dark:text-sky-300",
     cardBorder: "border-l-sky-500",
+    barColor:   "bg-sky-500",
   },
   EAS: {
     name: "École des Assistants Sociaux",
@@ -59,6 +63,7 @@ export const SCHOOL_CONFIG: Record<string, SchoolConfig> = {
     rowBorder:  "border-l-orange-500",
     avatar:     "bg-orange-100 dark:bg-orange-900/50 text-orange-700 dark:text-orange-300",
     cardBorder: "border-l-orange-500",
+    barColor:   "bg-orange-500",
   },
   CPPE: {
     name: "CPPE-PILOTE",
@@ -71,6 +76,7 @@ export const SCHOOL_CONFIG: Record<string, SchoolConfig> = {
     rowBorder:  "border-l-violet-500",
     avatar:     "bg-violet-100 dark:bg-violet-900/50 text-violet-700 dark:text-violet-300",
     cardBorder: "border-l-violet-500",
+    barColor:   "bg-violet-500",
   },
 };
 
@@ -85,6 +91,7 @@ const DEFAULT_SCHOOL: SchoolConfig = {
   rowBorder:  "border-l-border",
   avatar:     "bg-muted text-muted-foreground",
   cardBorder: "border-l-border",
+  barColor:   "bg-muted-foreground",
 };
 
 export function getSchool(code?: string | null): SchoolConfig {

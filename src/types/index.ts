@@ -84,14 +84,15 @@ export interface Enrollment {
 }
 
 export type PaymentType = "FRAIS_INSCRIPTION" | "FRAIS_SCOLARITE";
+export type PaymentMethod = "ESPÈCES" | "VIREMENT" | "MOBILE_MONEY";
 
 export interface Payment {
   id: string;
   enrollment_id: string;
   payment_type: PaymentType;
+  payment_method: PaymentMethod;
   amount: number;
   payment_date: string;
-  payment_method: string;
   receipt_number: string;
   installment_number: number;
   notes?: string;
@@ -123,12 +124,19 @@ export interface DashboardStats {
     en_cours: number;
     valide: number;
     annule: number;
+    by_school: Array<{ school_code: string; count: number }>;
   };
   payments: {
     total_collected: number;
     collected_this_month: number;
     recovery_rate: number;
   };
+  top_unpaid: Array<{
+    id: string;
+    student: { last_name: string; first_name: string; matricule: string } | null;
+    school_code: string | null;
+    academic_year: string | null;
+  }>;
 }
 
 export interface PaginatedResponse<T> {

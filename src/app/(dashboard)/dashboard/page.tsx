@@ -12,16 +12,17 @@ import {
   School,
   TrendingUp,
   Calendar,
-  GraduationCap,
   Banknote,
   CreditCard,
   CheckCircle,
   BarChart3,
   ArrowRight,
   ArrowUpRight,
+  AlertCircle,
 } from "lucide-react";
 import type { AcademicYear, DashboardStats } from "@/types";
 import { SCHOOL_CONFIG } from "@/lib/schools";
+import { cn } from "@/lib/utils";
 
 function formatFcfa(n: number) {
   if (n >= 1_000_000) return (n / 1_000_000).toFixed(1) + " M FCFA";
@@ -118,10 +119,14 @@ export default function DashboardPage() {
     },
   ];
 
+  // Distribution par école : calcul du max pour les barres
+  const bySchool = statsData?.enrollments.by_school ?? [];
+  const maxSchoolCount = Math.max(...bySchool.map((s) => s.count), 1);
+
   return (
     <div className="p-8 space-y-8">
 
-      {/* ── Header ───────────────────────────────────────────── */}
+      {/* ── Header ─────────────────────────────────────────────── */}
       <div className="flex items-start justify-between">
         <div>
           <div className="flex items-center gap-2.5 mb-1">
@@ -131,7 +136,7 @@ export default function DashboardPage() {
               <div className="flex-1 bg-green-700" />
             </div>
             <h1 className="text-2xl font-bold text-foreground tracking-tight">
-              Bonjour, {user?.full_name?.split(" ")[0]} 
+              Bonjour, {user?.full_name?.split(" ")[0]}
             </h1>
           </div>
           <p className="text-sm text-muted-foreground">
@@ -146,7 +151,7 @@ export default function DashboardPage() {
         )}
       </div>
 
-      {/* ── Stats générales ───────────────────────────────────── */}
+      {/* ── Stats générales ─────────────────────────────────────── */}
       <section>
         <p className="text-xs font-semibold text-muted-foreground uppercase tracking-widest mb-3">
           Vue générale
@@ -184,7 +189,7 @@ export default function DashboardPage() {
         </div>
       </section>
 
-      {/* ── Stats financières ─────────────────────────────────── */}
+      {/* ── Stats financières ────────────────────────────────────── */}
       <section>
         <p className="text-xs font-semibold text-muted-foreground uppercase tracking-widest mb-3">
           Finances
@@ -212,7 +217,125 @@ export default function DashboardPage() {
         </div>
       </section>
 
-      {/* ── Établissements ────────────────────────────────────── */}
+      {/* ── Distribution par école + Top impayés ─────────────────── */}
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+
+        {/* Distribution par école */}
+        <section>
+          <p className="text-xs font-semibold text-muted-foreground uppercase tracking-widest mb-3">
+            Répartition par école
+          </p>
+          <Card className="bg-card shadow-sm">
+            <CardContent className="p-5 space-y-4">
+              {bySchool.length === 0 ? (
+                <p className="text-sm text-muted-foreground text-center py-4">Aucune donnée</p>
+              ) : (
+                bySchool.map((s) => {
+                  const cfg = SCHOOL_CONFIG[s.school_code];
+                  if (!cfg) return null;
+                  const pct = Math.round((s.count / maxSchoolCount) * 100);
+                  return (
+                    <Link key={s.school_code} href={`/etudiants?school=${s.school_code}`}>
+                      <div className="group cursor-pointer">
+                        <div className="flex items-center justify-between mb-1.5">
+                          <div className="flex items-center gap-2">
+                            <span className="text-base">{cfg.icon}</span>
+                            <span className={cn("text-xs font-bold px-2 py-0.5 rounded", cfg.badge)}>
+                              {s.school_code}
+                            </span>
+                            <span className="text-xs text-muted-foreground hidden sm:inline">{cfg.name}</span>
+                          </div>
+                          <span className="text-sm font-semibold text-foreground">
+                            {s.count}
+                          </span>
+                        </div>
+                        <div className="h-2 rounded-full bg-muted overflow-hidden">
+                          <div
+                            className={cn("h-full rounded-full transition-all group-hover:opacity-80", cfg.barColor ?? "bg-primary")}
+                            style={{ width: `${pct}%` }}
+                          />
+                        </div>
+                      </div>
+                    </Link>
+                  );
+                })
+              )}
+            </CardContent>
+          </Card>
+        </section>
+
+        {/* Top 5 inscriptions en cours */}
+        <section>
+          <p className="text-xs font-semibold text-muted-foreground uppercase tracking-widest mb-3">
+            Inscriptions EN COURS récentes
+          </p>
+          <Card className="bg-card shadow-sm">
+            <CardContent className="p-0">
+              {!statsData?.top_unpaid || statsData.top_unpaid.length === 0 ? (
+                <div className="flex flex-col items-center justify-center py-10 gap-2 text-muted-foreground">
+                  <CheckCircle className="w-8 h-8 opacity-20" />
+                  <p className="text-sm">Aucune inscription en cours</p>
+                </div>
+              ) : (
+                <div className="divide-y divide-border">
+                  {statsData.top_unpaid.map((item) => {
+                    const cfg = item.school_code ? SCHOOL_CONFIG[item.school_code] : null;
+                    const initials = item.student
+                      ? `${item.student.last_name[0] ?? ""}${item.student.first_name[0] ?? ""}`.toUpperCase()
+                      : "?";
+                    return (
+                      <Link key={item.id} href={`/inscriptions/${item.id}`}>
+                        <div className={cn(
+                          "flex items-center gap-3 px-5 py-3.5 hover:bg-accent/40 transition-colors border-l-4 group",
+                          cfg?.rowBorder ?? "border-l-muted"
+                        )}>
+                          <div className={cn(
+                            "w-8 h-8 rounded-full flex items-center justify-center text-xs font-bold shrink-0",
+                            cfg?.avatar ?? "bg-muted text-muted-foreground"
+                          )}>
+                            {initials}
+                          </div>
+                          <div className="flex-1 min-w-0">
+                            <div className="text-sm font-semibold text-foreground truncate">
+                              {item.student
+                                ? `${item.student.last_name} ${item.student.first_name}`
+                                : "—"}
+                            </div>
+                            <div className="text-xs text-muted-foreground flex items-center gap-1.5 mt-0.5">
+                              {item.school_code && (
+                                <span className={cn("font-bold", cfg?.accent)}>{item.school_code}</span>
+                              )}
+                              {item.school_code && item.academic_year && <span>·</span>}
+                              <span>{item.academic_year ?? "—"}</span>
+                            </div>
+                          </div>
+                          <div className="flex items-center gap-1.5 shrink-0">
+                            <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded text-xs font-medium bg-amber-100 text-amber-800 dark:bg-amber-900/40 dark:text-amber-300">
+                              <AlertCircle className="w-3 h-3" />
+                              En cours
+                            </span>
+                            <ArrowRight className="w-3.5 h-3.5 text-muted-foreground group-hover:translate-x-0.5 transition-transform" />
+                          </div>
+                        </div>
+                      </Link>
+                    );
+                  })}
+                </div>
+              )}
+              <div className="px-5 py-3 border-t border-border">
+                <Link href="/inscriptions?status=EN_COURS">
+                  <span className="text-xs text-primary font-medium hover:underline flex items-center gap-1">
+                    Voir toutes les inscriptions en cours
+                    <ArrowRight className="w-3 h-3" />
+                  </span>
+                </Link>
+              </div>
+            </CardContent>
+          </Card>
+        </section>
+      </div>
+
+      {/* ── Établissements ──────────────────────────────────────── */}
       <section>
         <div className="flex items-center justify-between mb-4">
           <p className="text-xs font-semibold text-muted-foreground uppercase tracking-widest">
@@ -246,7 +369,7 @@ export default function DashboardPage() {
         </div>
       </section>
 
-      {/* ── Actions rapides ───────────────────────────────────── */}
+      {/* ── Actions rapides ──────────────────────────────────────── */}
       <section>
         <p className="text-xs font-semibold text-muted-foreground uppercase tracking-widest mb-4">
           Actions rapides
@@ -264,10 +387,10 @@ export default function DashboardPage() {
               Voir les inscriptions
             </div>
           </Link>
-          <Link href="/etudiants">
+          <Link href="/documents">
             <div className="flex items-center gap-2.5 px-5 py-3 rounded-xl bg-card border border-border hover:bg-accent text-sm font-medium text-foreground transition-colors shadow-sm">
               <TrendingUp className="w-4 h-4 text-muted-foreground" />
-              Tous les étudiants
+              Documents PDF
             </div>
           </Link>
         </div>

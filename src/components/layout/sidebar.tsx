@@ -11,6 +11,7 @@ import {
   Users,
   BookOpen,
   CreditCard,
+  FileText,
   Settings,
   LogOut,
   ChevronRight,
@@ -46,6 +47,12 @@ const navItems = [
     label: "Paiements",
     icon: CreditCard,
     roles: ["ADMIN", "COMPTABILITE"],
+  },
+  {
+    href: "/documents",
+    label: "Documents",
+    icon: FileText,
+    roles: ["ADMIN", "SCOLARITE", "COMPTABILITE"],
   },
   {
     href: "/parametres",

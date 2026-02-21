@@ -17,8 +17,9 @@ import { BalanceCard } from "@/components/payments/BalanceCard";
 import {
   ArrowLeft, CreditCard, FileText, Download, Trash2,
   CheckCircle, Clock, XCircle, Plus, Loader2, Banknote,
+  Smartphone, Building2, Receipt,
 } from "lucide-react";
-import type { Enrollment, Payment, FeeSchedule } from "@/types";
+import type { Enrollment, Payment, FeeSchedule, PaymentMethod } from "@/types";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
@@ -41,8 +42,27 @@ const STATUS_CONFIG: Record<string, { label: string; icon: React.ReactNode; colo
   },
 };
 
+const PAYMENT_METHOD_CONFIG: Record<PaymentMethod, { label: string; icon: React.ReactNode; badge: string }> = {
+  "ESPÈCES": {
+    label: "Espèces",
+    icon: <Banknote className="w-3.5 h-3.5" />,
+    badge: "bg-emerald-500/10 text-emerald-700 dark:text-emerald-400 border-emerald-500/20",
+  },
+  "VIREMENT": {
+    label: "Virement bancaire",
+    icon: <Building2 className="w-3.5 h-3.5" />,
+    badge: "bg-blue-500/10 text-blue-700 dark:text-blue-400 border-blue-500/20",
+  },
+  "MOBILE_MONEY": {
+    label: "Mobile Money",
+    icon: <Smartphone className="w-3.5 h-3.5" />,
+    badge: "bg-orange-500/10 text-orange-700 dark:text-orange-400 border-orange-500/20",
+  },
+};
+
 const paymentSchema = z.object({
   payment_type:       z.enum(["FRAIS_INSCRIPTION", "FRAIS_SCOLARITE"]),
+  payment_method:     z.enum(["ESPÈCES", "VIREMENT", "MOBILE_MONEY"]),
   amount:             z.coerce.number().positive("Montant requis"),
   payment_date:       z.string().min(1, "Date requise"),
   receipt_number:     z.string().min(1, "N° reçu requis"),
@@ -69,7 +89,8 @@ export default function EnrollmentDetailPage() {
   const { register, handleSubmit, setValue, watch, reset, formState: { errors } } = useForm<PaymentFormData>({
     resolver: zodResolver(paymentSchema),
     defaultValues: {
-      payment_type: "FRAIS_SCOLARITE",
+      payment_type:   "FRAIS_SCOLARITE",
+      payment_method: "ESPÈCES",
       installment_number: 1,
       payment_date: new Date().toISOString().slice(0, 10),
     },
@@ -133,6 +154,23 @@ export default function EnrollmentDetailPage() {
       URL.revokeObjectURL(link.href);
     } catch {
       alert("Erreur lors de la génération du PDF.");
+    } finally {
+      setPdfLoading(null);
+    }
+  };
+
+  const handleDownloadReceipt = async (paymentId: string, receiptNumber: string) => {
+    setPdfLoading(`receipt-${paymentId}`);
+    try {
+      const response = await api.get(`/documents/receipt/${paymentId}`, { responseType: "blob" });
+      const blob = new Blob([response.data], { type: "application/pdf" });
+      const link = document.createElement("a");
+      link.href = URL.createObjectURL(blob);
+      link.download = `recu_${receiptNumber}.pdf`;
+      link.click();
+      URL.revokeObjectURL(link.href);
+    } catch {
+      alert("Erreur lors de la génération du reçu.");
     } finally {
       setPdfLoading(null);
     }
@@ -244,39 +282,60 @@ export default function EnrollmentDetailPage() {
                 </div>
               ) : (
                 <div className="space-y-2.5">
-                  {payments.map((payment) => (
-                    <div key={payment.id}
-                      className="flex items-center gap-3 p-3.5 rounded-xl bg-muted/50 border border-border hover:bg-accent/50 transition-colors">
-                      <div className="w-9 h-9 rounded-xl bg-emerald-500/10 border border-emerald-500/20 flex items-center justify-center shrink-0">
-                        <span className="text-xs font-bold text-emerald-600 dark:text-emerald-400">
-                          T{payment.installment_number}
-                        </span>
-                      </div>
-                      <div className="flex-1 min-w-0">
-                        <div className="flex items-center gap-2 flex-wrap">
-                          <span className="text-sm font-semibold text-foreground">
-                            {formatFcfa(Number(payment.amount))}
+                  {payments.map((payment) => {
+                    const methodCfg = PAYMENT_METHOD_CONFIG[payment.payment_method] ?? PAYMENT_METHOD_CONFIG["ESPÈCES"];
+                    return (
+                      <div key={payment.id}
+                        className="flex items-center gap-3 p-3.5 rounded-xl bg-muted/50 border border-border hover:bg-accent/50 transition-colors">
+                        <div className="w-9 h-9 rounded-xl bg-emerald-500/10 border border-emerald-500/20 flex items-center justify-center shrink-0">
+                          <span className="text-xs font-bold text-emerald-600 dark:text-emerald-400">
+                            T{payment.installment_number}
                           </span>
-                          <Badge variant="outline" className="text-xs font-normal">
-                            {payment.payment_type === "FRAIS_INSCRIPTION" ? "Inscription" : "Scolarité"}
-                          </Badge>
                         </div>
-                        <div className="text-xs text-muted-foreground mt-0.5 flex items-center gap-1.5 flex-wrap">
-                          <span>{formatDate(payment.payment_date)}</span>
-                          <span>·</span>
-                          <span>Reçu #{payment.receipt_number}</span>
-                          {payment.notes && <><span>·</span><span>{payment.notes}</span></>}
+                        <div className="flex-1 min-w-0">
+                          <div className="flex items-center gap-2 flex-wrap">
+                            <span className="text-sm font-semibold text-foreground">
+                              {formatFcfa(Number(payment.amount))}
+                            </span>
+                            <Badge variant="outline" className="text-xs font-normal">
+                              {payment.payment_type === "FRAIS_INSCRIPTION" ? "Inscription" : "Scolarité"}
+                            </Badge>
+                            <Badge variant="outline" className={`text-xs font-normal flex items-center gap-1 ${methodCfg.badge}`}>
+                              {methodCfg.icon}
+                              {methodCfg.label}
+                            </Badge>
+                          </div>
+                          <div className="text-xs text-muted-foreground mt-0.5 flex items-center gap-1.5 flex-wrap">
+                            <span>{formatDate(payment.payment_date)}</span>
+                            <span>·</span>
+                            <span>Reçu #{payment.receipt_number}</span>
+                            {payment.notes && <><span>·</span><span>{payment.notes}</span></>}
+                          </div>
+                        </div>
+                        <div className="flex items-center gap-1 shrink-0">
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            onClick={() => handleDownloadReceipt(payment.id, payment.receipt_number)}
+                            disabled={pdfLoading === `receipt-${payment.id}`}
+                            className="text-muted-foreground hover:text-primary hover:bg-primary/10 h-8 px-2"
+                            title="Télécharger le reçu"
+                          >
+                            {pdfLoading === `receipt-${payment.id}`
+                              ? <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                              : <Receipt className="w-3.5 h-3.5" />}
+                          </Button>
+                          {canDeletePayment && (
+                            <Button variant="ghost" size="sm"
+                              onClick={() => { if (confirm("Annuler ce paiement ?")) deletePayment.mutate(payment.id); }}
+                              className="text-muted-foreground hover:text-red-500 hover:bg-red-500/10 h-8 px-2">
+                              <Trash2 className="w-3.5 h-3.5" />
+                            </Button>
+                          )}
                         </div>
                       </div>
-                      {canDeletePayment && (
-                        <Button variant="ghost" size="sm"
-                          onClick={() => { if (confirm("Annuler ce paiement ?")) deletePayment.mutate(payment.id); }}
-                          className="text-muted-foreground hover:text-red-500 hover:bg-red-500/10 shrink-0">
-                          <Trash2 className="w-4 h-4" />
-                        </Button>
-                      )}
-                    </div>
-                  ))}
+                    );
+                  })}
                 </div>
               )}
             </CardContent>
@@ -355,6 +414,7 @@ export default function EnrollmentDetailPage() {
 
           <form onSubmit={handleSubmit((data) => addPayment.mutate(data))} className="space-y-4 mt-1">
             <div className="grid grid-cols-2 gap-4">
+
               <div className="col-span-2">
                 <Label className="text-foreground text-sm">Type de frais</Label>
                 <Select value={watch("payment_type")}
@@ -365,6 +425,36 @@ export default function EnrollmentDetailPage() {
                   <SelectContent>
                     <SelectItem value="FRAIS_INSCRIPTION">Frais d&apos;inscription</SelectItem>
                     <SelectItem value="FRAIS_SCOLARITE">Frais de scolarité</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+
+              <div className="col-span-2">
+                <Label className="text-foreground text-sm">Mode de paiement</Label>
+                <Select value={watch("payment_method")}
+                  onValueChange={(v) => setValue("payment_method", v as "ESPÈCES" | "VIREMENT" | "MOBILE_MONEY")}>
+                  <SelectTrigger className="mt-1.5 bg-background border-border">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="ESPÈCES">
+                      <span className="flex items-center gap-2">
+                        <Banknote className="w-4 h-4 text-emerald-600" />
+                        Espèces
+                      </span>
+                    </SelectItem>
+                    <SelectItem value="VIREMENT">
+                      <span className="flex items-center gap-2">
+                        <Building2 className="w-4 h-4 text-blue-600" />
+                        Virement bancaire
+                      </span>
+                    </SelectItem>
+                    <SelectItem value="MOBILE_MONEY">
+                      <span className="flex items-center gap-2">
+                        <Smartphone className="w-4 h-4 text-orange-600" />
+                        Mobile Money
+                      </span>
+                    </SelectItem>
                   </SelectContent>
                 </Select>
               </div>
@@ -401,11 +491,6 @@ export default function EnrollmentDetailPage() {
                 <Label className="text-foreground text-sm">Notes (optionnel)</Label>
                 <Textarea {...register("notes")} placeholder="Remarques..."
                   className="mt-1.5 bg-background border-border resize-none" rows={2} />
-              </div>
-
-              <div className="col-span-2 flex items-center gap-2 text-sm text-muted-foreground px-3 py-2.5 rounded-lg bg-muted">
-                <Banknote className="w-4 h-4 shrink-0" />
-                Paiement en espèces uniquement
               </div>
             </div>
 
