@@ -100,7 +100,7 @@ export default function LandingPage() {
           opacity: visible ? 1 : 0, transition: "opacity 1s ease .3s",
         }}>
           {/* eslint-disable-next-line @next/next/no-img-element */}
-          <img src="https://images.unsplash.com/photo-1523050854058-8df90110c8f1?w=800&q=80" style={{ width: "100%", height: "100%", objectFit: "cover" }} alt="" />
+          <img src="/insfsimages.jpg" style={{ width: "100%", height: "100%", objectFit: "cover" }} alt="" />
           <div style={{ position: "absolute", inset: 0, background: "linear-gradient(0deg,rgba(20,98,58,.25) 0%,transparent 50%)" }} />
         </div>
 
@@ -112,7 +112,7 @@ export default function LandingPage() {
           opacity: visible ? 1 : 0, transition: "opacity 1s ease .6s", border: "3px solid #fff",
         }}>
           {/* eslint-disable-next-line @next/next/no-img-element */}
-          <img src="https://images.unsplash.com/photo-1524178232363-1fb2b075b655?w=600&q=80" style={{ width: "100%", height: "100%", objectFit: "cover" }} alt="" />
+          <img src="im2.jpg" style={{ width: "100%", height: "100%", objectFit: "cover" }} alt="" />
         </div>
 
         {/* Contenu principal */}

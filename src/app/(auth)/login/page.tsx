@@ -64,7 +64,7 @@ export default function LoginPage() {
         {/* Image de fond */}
         {/* eslint-disable-next-line @next/next/no-img-element */}
         <img
-          src="https://images.unsplash.com/photo-1523050854058-8df90110c8f1?w=1400&q=80"
+          src="/insfsimages.jpg"
           alt=""
           className="absolute inset-0 w-full h-full object-cover"
         />
